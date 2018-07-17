@@ -288,50 +288,130 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }else{
                 loop@ for (i in 0 until win_step!!) {
                     if (win_item!![num] != ItemStack(Material.AIR)) {
-                        if (frame[num].item == win_item!![num] || frame[num + 3].item == win_item!![num] || frame[num + 6].item == win_item!![num]) {
-                            break@loop
-                        }else{
-                            when(size){
-
-                                0->{
-                                    spin1()
-                                    spin2()
-                                    spin3()
+                        when(size){
+                            0->{
+                                    if (frame[num].item == win_item!![num] || frame[num + 3].item == win_item!![num] || frame[num + 6].item == win_item!![num]) {
+                                        break@loop
+                                    } else {
+                                        spin1()
+                                        spin2()
+                                        spin3()
+                                    }
                                 }
-                                1->{
+                            1->{
                                     when(stoplist[0]){
                                         0->{
-                                            spin2()
-                                            spin3()
+                                            if (win_item!![0] == ItemStack(Material.AIR)) {
+                                                if (frame[num].item == win_item!![num] || frame[num + 3].item == win_item!![num] || frame[num + 6].item == win_item!![num]) {
+                                                    break@loop
+                                                } else {
+                                                    spin2()
+                                                    spin3()
+                                                }
+                                            }else {
+                                                if (reachCheck(win_item!!, num, 0)) {
+                                                    break@loop
+                                                }else {
+                                                    spin2()
+                                                    spin3()
+                                                }
+                                            }
                                         }
                                         1->{
-                                            spin1()
-                                            spin3()
+                                            if (win_item!![1] == ItemStack(Material.AIR)) {
+                                                if (frame[num].item == win_item!![num] || frame[num + 3].item == win_item!![num] || frame[num + 6].item == win_item!![num]) {
+                                                    break@loop
+                                                } else {
+                                                    spin1()
+                                                    spin3()
+                                                }
+                                            }else {
+                                                if (reachCheck(win_item!!, num, 1)) {
+                                                    break@loop
+                                                }else {
+                                                    spin1()
+                                                    spin3()
+                                                }
+                                            }
                                         }
                                         2->{
-                                            spin1()
-                                            spin3()
+                                            if (win_item!![2] == ItemStack(Material.AIR)) {
+                                                if (frame[num].item == win_item!![num] || frame[num + 3].item == win_item!![num] || frame[num + 6].item == win_item!![num]) {
+                                                    break@loop
+                                                } else {
+                                                    spin2()
+                                                    spin1()
+                                                }
+                                            }else {
+                                                if (reachCheck(win_item!!, num, 2)) {
+                                                    break@loop
+                                                }else {
+                                                    spin2()
+                                                    spin1()
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                                2->{
-                                    when(num){
-                                        0->spin1()
-                                        1->spin2()
-                                        3->spin3()
+                            2->{
+                                when(num){
+                                    0-> {
+                                        if (win_item!![1] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 1)){
+                                                break@loop
+                                            }else{
+                                                spin1()
+                                            }
+                                        }
+                                        if (win_item!![2] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 2)){
+                                                break@loop
+                                            }else{
+                                                spin1()
+                                            }
+                                        }
+                                    }
+                                    1->{
+                                        if (win_item!![0] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 0)){
+                                                break@loop
+                                            }else{
+                                                spin2()
+                                            }
+                                        }
+                                        if (win_item!![2] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 2)){
+                                                break@loop
+                                            }else{
+                                                spin2()
+                                            }
+                                        }
+                                    }
+                                    3->{
+                                        if (win_item!![0] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 0)){
+                                                break@loop
+                                            }else{
+                                                spin3()
+                                            }
+                                        }
+                                        if (win_item!![1] != ItemStack(Material.AIR)) {
+                                            if (reachCheck(win_item!!, num, 1)){
+                                                break@loop
+                                            }else{
+                                                spin3()
+                                            }
+                                        }
                                     }
                                 }
-
                             }
                         }
-                        step++
-                        sleep(sleep)
                     }else break@loop
+                    step++
+                    sleep(sleep)
                 }
             }
-
         }
-
     }
 
     @Synchronized
