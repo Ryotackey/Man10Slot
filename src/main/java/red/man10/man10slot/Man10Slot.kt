@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.scheduler.BukkitRunnable
 import red.man10.kotlin.CustomConfig
 import java.io.File
 import java.util.*
@@ -198,9 +199,16 @@ class Man10Slot : JavaPlugin() {
                     slot.wining_stockodds[win] = config.getDouble("$key.wining_setting.$win.stockodds")
                     slot.wining_chance[config.getDouble("$key.wining_setting.$win.chance")] = win
                     slot.wining_step[win] = config.getInt("$key.wining_setting.$win.step")
-                    slot.wining_command[win] = config.getList("$key.wining_setting.$win.command") as MutableList<String>
                     slot.wining_con[win] = config.getBoolean("$key.wining_setting.$win.flag_con")
                     slot.wining_light[win] = config.getBoolean("$key.wining_setting.$win.light")
+
+                    if (config.contains("$key.wining_setting.$win.command")) {
+                        slot.wining_command[win] = config.getList("$key.wining_setting.$win.command") as MutableList<String>
+                    }
+
+                    if (config.contains("$key.wining_setting.$win.chancewin")){
+                        slot.chancewin[win] = config.getList("$key.wining_setting.$win.chancewin") as MutableList<String>
+                    }
 
                     if (config.contains("$key.wining_setting.$win.lightsound")){
                         val sound = Sound()
@@ -312,6 +320,41 @@ class Man10Slot : JavaPlugin() {
         return list
     }
 
+    fun runCommand(commands: MutableList<String>, winname: String, p: Player, slotname: String, money: Double){
+
+        object : BukkitRunnable(){
+            override fun run() {
+                for (i in commands) {
+                    val i2: String = if (i.contains(Regex("<player>"))){
+                        i.replace("<player>", p.name)
+                    }else i
+                    val i3 = if (i2.contains(Regex("<slot>"))){
+                        i.replace("<slot>", slotname)
+                    }else i2
+                    var i4= if (i3.contains(Regex("<prize>"))){
+                        i.replace("<prize>", money.toString())
+                    }else i3
+                    var i5 = if (i4.contains(Regex("<win>"))){
+                        i.replace("<win>", winname)
+                    }else i4
+                    server.dispatchCommand(server.consoleSender, i5)
+                }
+            }
+        }.runTask(this)
+
+    }
+
+    fun blockPlace(slot: SlotInformation, key: String){
+
+        object : BukkitRunnable(){
+            override fun run() {
+                val b = lightloc[key]!!.block
+                b.type = slot.block
+            }
+        }.runTask(this)
+
+    }
+
     class SlotInformation{
 
         var slot_name = ""
@@ -324,7 +367,7 @@ class Man10Slot : JavaPlugin() {
         var stock = 0.0
 
         var win = "0"
-        var block: Block? = null
+        var block: Material? = null
 
         val wining_name = HashMap<String, String>()
         val wining_item = HashMap<String, MutableList<ItemStack>>()
@@ -332,7 +375,7 @@ class Man10Slot : JavaPlugin() {
         val wining_stockodds = HashMap<String, Double>()
         val wining_chance = HashMap<Double, String>()
         val wining_step = HashMap<String, Int>()
-        val wining_command = HashMap<String, MutableList<String>>()
+        val wining_command = HashMap<String, MutableList<String>?>()
         val wining_con = HashMap<String, Boolean>()
         val wining_light = HashMap<String, Boolean>()
         val wining_lightsound = HashMap<String, Sound?>()
@@ -340,6 +383,7 @@ class Man10Slot : JavaPlugin() {
         val stopsound1 = HashMap<String, Sound?>()
         val stopsound2 = HashMap<String, Sound?>()
         val stopsound3 = HashMap<String, Sound?>()
+        val chancewin = HashMap<String, MutableList<String>?>()
 
         var spinSound = Sound()
 

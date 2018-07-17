@@ -175,8 +175,8 @@ class Event(val plugin: Man10Slot): Listener {
                 }
 
                 if (slot.wining_light[win]!!){
-                    val bl = plugin.lightloc[key]!!.block
-                    slot.block = bl
+                    val bl = plugin.lightloc[key]!!.world.getBlockAt(plugin.lightloc[key]!!)
+                    slot.block = bl.type
                     plugin.lightloc[key]!!.block.type = Material.REDSTONE_BLOCK
                 }
 
@@ -203,6 +203,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button1loc.containsKey(b.location)){
+            e.isCancelled = true
             val key = plugin.button1loc[b.location]!!
             val slot = plugin.slotmap[key]!!
 
@@ -218,6 +219,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button2loc.containsKey(b.location)){
+            e.isCancelled = true
             val key = plugin.button2loc[b.location]!!
             val slot = plugin.slotmap[key]!!
 
@@ -233,6 +235,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button3loc.containsKey(b.location)){
+            e.isCancelled = true
             val key = plugin.button3loc[b.location]!!
             val slot = plugin.slotmap[key]!!
 

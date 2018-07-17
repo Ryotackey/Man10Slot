@@ -4,6 +4,7 @@ import org.bukkit.Material
 import org.bukkit.entity.ItemFrame
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import java.util.*
 
 class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slot: Man10Slot.SlotInformation, val key: String): Thread() {
 
@@ -141,6 +142,11 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }
 
             step++
+            if (step > 450){
+                slot.spin1 = false
+                slot.spin2 = false
+                slot.spin3 = false
+            }
             sleep(sleep)
         }
 
@@ -171,6 +177,22 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
     fun hit(){
         p.sendMessage(prefix + "§e§lおめでとうございます！${win_name!!}§e§lです！")
         slot.win = "0"
+        val totalprize = win_prize!! + win_odds!!
+        if (win_command != null) {
+            plugin.runCommand(win_command!!, win_name!!, p, slot.slot_name, totalprize)
+        }
+        val sound = win_sound!!
+        p.location.world.playSound(p.location, sound.sound, sound.volume, sound.pitch)
+        if (slot.wining_light[win]!!){
+            plugin.blockPlace(slot, key)
+        }
+
+        val list = slot.chancewin[win]
+        if (list != null){
+            val r = Random().nextInt(list.size)
+            slot.win = list[r]
+        }
+
     }
 
     @Synchronized
