@@ -1,6 +1,7 @@
 package red.man10.man10slot
 
 import org.bukkit.Material
+import org.bukkit.block.Sign
 import org.bukkit.entity.EntityType
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -9,6 +10,9 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.SignChangeEvent
 import org.bukkit.event.hanging.HangingPlaceEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import red.man10.man10vaultapiplus.Man10VaultAPI
+import red.man10.man10vaultapiplus.enums.TransactionCategory
+import red.man10.man10vaultapiplus.enums.TransactionType
 import java.util.*
 
 class Event(val plugin: Man10Slot): Listener {
@@ -145,6 +149,8 @@ class Event(val plugin: Man10Slot): Listener {
 
         if (plugin.leverloc.containsKey(b.location)){
 
+            val v = Man10VaultAPI("Man10Slot")
+
             val key = plugin.leverloc[b.location]!!
             val slot = plugin.slotmap[key]!!
 
@@ -153,6 +159,18 @@ class Event(val plugin: Man10Slot): Listener {
                 p.sendMessage(plugin.prefix + "§c今回っています")
                 return
             }
+
+            if (v.getBalance(p.uniqueId) < slot.price){
+                p.sendMessage(plugin.prefix + "§cお金が足りません")
+                return
+            }
+
+            v.transferMoneyPlayerToCountry(p.uniqueId, slot.price, TransactionCategory.GAMBLE, TransactionType.BET, "slot bet")
+            v.transferMoneyCountryToPool(slot.pool!!.id, slot.price*slot.stock, TransactionCategory.GAMBLE, TransactionType.BET, "slot bet")
+
+            val sign = plugin.signloc[key]!!.block.state as Sign
+            sign.setLine(2, "§6§l" + slot.pool!!.balance.toString())
+            sign.update()
 
             val winlist = plugin.mapSort(slot.wining_chance)
 
@@ -184,6 +202,11 @@ class Event(val plugin: Man10Slot): Listener {
                     val sound = slot.wining_lightsound[win]!!
                     p.location.world.playSound(p.location, sound.sound, sound.volume, sound.pitch)
                 }
+
+                if (slot.light_particle[win] != null) {
+                    val par = slot.light_particle[win]!!
+                    plugin.frameloc[key]!![4].world.spawnParticle(par.par!!, plugin.frameloc[key]!![4], par.count!!)
+                }
             }
 
             val sound = slot.spinSound
@@ -193,9 +216,13 @@ class Event(val plugin: Man10Slot): Listener {
             slot.spin2 = true
             slot.spin3 = true
 
+            slot.allstop = false
+
             slot.p = p
 
             p.sendMessage(win)
+
+            slot.spincount++
 
             val spin = SpinProcess(plugin, p, win, slot, key)
             spin.start()

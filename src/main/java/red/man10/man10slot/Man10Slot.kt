@@ -3,7 +3,6 @@ package red.man10.man10slot
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.block.Block
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
@@ -11,8 +10,10 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import red.man10.kotlin.CustomConfig
+import red.man10.man10vaultapiplus.MoneyPoolObject
+import red.man10.man10vaultapiplus.enums.MoneyPoolTerm
+import red.man10.man10vaultapiplus.enums.MoneyPoolType
 import java.io.File
-import java.util.*
 import kotlin.collections.HashMap
 
 class Man10Slot : JavaPlugin() {
@@ -20,8 +21,6 @@ class Man10Slot : JavaPlugin() {
     val loccon = CustomConfig(this, "location.yml")
 
     var slotfile = File(this.dataFolder.absolutePath + "\\slots")
-
-    var slotlist = mutableListOf<FileConfiguration>()
 
     val slotmap = HashMap<String, SlotInformation>()
 
@@ -50,9 +49,6 @@ class Man10Slot : JavaPlugin() {
 
         slotfile.mkdir()
 
-        val filelist = slotfile.listFiles()
-
-        slotlist = fileToConfig(filelist)
         slotLoad()
 
         loadLocation()
@@ -97,6 +93,14 @@ class Man10Slot : JavaPlugin() {
 
             config.set("location.frameloc.${i.key}", list)
 
+        }
+
+        for (i in slotmap){
+            config.set("poolid.${i.key}", i.value.pool!!.id)
+            config.set("spincount.${i.key}", i.value.spincount)
+            for (j in i.value.wincount){
+                config.set("wincount.${i.key}.${j.key}", j.value)
+            }
         }
 
         loccon.saveConfig()
@@ -161,6 +165,32 @@ class Man10Slot : JavaPlugin() {
         return map
     }
 
+    fun removeLocation(key: String){
+
+        button1loc.values.remove(key)
+        button2loc.values.remove(key)
+        button3loc.values.remove(key)
+        leverloc.values.remove(key)
+
+        signloc.remove(key)
+        lightloc.remove(key)
+        frameloc.remove(key)
+
+        for (i in slotmap){
+            if (i.key == key){
+                i.value.wincount.clear()
+                i.value.spincount = 0
+            }
+        }
+
+        for (i in loccon.getConfig()!!.getKeys(false)) {
+            loccon.getConfig()!!.set(i, null)
+        }
+
+        locationSave()
+
+    }
+
     fun strToLocation(str: String): Location{
 
         val locstr = str.split(Regex("/"))
@@ -171,6 +201,10 @@ class Man10Slot : JavaPlugin() {
     }
 
     fun slotLoad(){
+
+        val filelist = slotfile.listFiles()
+
+        val slotlist = fileToConfig(filelist)
 
         if (slotlist.size == 0)return
 
@@ -219,6 +253,20 @@ class Man10Slot : JavaPlugin() {
                         slot.wining_lightsound[win] = sound
                     }
 
+                    if (config.contains("$key.wining_setting.$win.win_particle")){
+                        val par = Particle()
+                        par.par = org.bukkit.Particle.valueOf(config.getString("$key.wining_setting.$win.win_particle.particle"))
+                        par.count = config.getInt("$key.wining_setting.$win.win_particle.count")
+                        slot.win_particle[win] = par
+                    }
+
+                    if (config.contains("$key.wining_setting.$win.light_particle")){
+                        val par = Particle()
+                        par.par = org.bukkit.Particle.valueOf(config.getString("$key.wining_setting.$win.light_particle.particle"))
+                        par.count = config.getInt("$key.wining_setting.$win.light_particle.count")
+                        slot.light_particle[win] = par
+                    }
+
                     val sound = Sound()
                     sound.sound = org.bukkit.Sound.valueOf(config.getString("$key.wining_setting.$win.winsound.sound"))
                     sound.volume = config.getDouble("$key.wining_setting.$win.winsound.volume").toFloat()
@@ -234,6 +282,22 @@ class Man10Slot : JavaPlugin() {
                 sound.pitch = config.getDouble("$key.sound_setting.spinsound.pitch").toFloat()
 
                 slot.spinSound = sound
+
+                if (loccon.getConfig()!!.contains("poolid.$key")){
+                    slot.pool = MoneyPoolObject("Man10Slot", loccon.getConfig()!!.getLong("poolid.$key"))
+                }else{
+                    slot.pool = MoneyPoolObject("Man10Slot", MoneyPoolTerm.LONG_TERM, MoneyPoolType.GAMBLE_POOL, "$key pool")
+                }
+
+                if (loccon.getConfig()!!.contains("spincount.$key")){
+                    slot.spincount = loccon.getConfig()!!.getInt("spincount.$key")
+                }
+
+                if (loccon.getConfig()!!.contains("wincount.$key")){
+                    for (i in loccon.getConfig()!!.getConfigurationSection("wincount.${key}").getKeys(false)){
+                        slot.wincount[i] = loccon.getConfig()!!.getInt("wincount.${key}.$i")
+                    }
+                }
 
                 slotmap[key] = slot
             }
@@ -380,6 +444,8 @@ class Man10Slot : JavaPlugin() {
         val wining_light = HashMap<String, Boolean>()
         val wining_lightsound = HashMap<String, Sound?>()
         val wining_sound = HashMap<String, Sound>()
+        val win_particle = HashMap<String, Particle?>()
+        val light_particle = HashMap<String, Particle?>()
         val stopsound1 = HashMap<String, Sound?>()
         val stopsound2 = HashMap<String, Sound?>()
         val stopsound3 = HashMap<String, Sound?>()
@@ -391,7 +457,14 @@ class Man10Slot : JavaPlugin() {
         var spin2 = false
         var spin3 = false
 
+        var allstop = true
+
         var p: Player? = null
+
+        var pool: MoneyPoolObject? = null
+
+        var spincount = 0
+        val wincount = HashMap<String, Int>()
 
     }
 
@@ -399,5 +472,9 @@ class Man10Slot : JavaPlugin() {
         var sound: org.bukkit.Sound? = null
         var volume = 0f
         var pitch = 0f
+    }
+    class Particle{
+        var par: org.bukkit.Particle? = null
+        var count: Int? = null
     }
 }
