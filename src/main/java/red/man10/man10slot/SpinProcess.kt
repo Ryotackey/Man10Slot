@@ -33,8 +33,6 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
     var slotnum = -1
 
     val lose = mutableListOf<MutableList<ItemStack>>()
-
-    val stoplist = mutableListOf<Int>()
     val slist = mutableListOf<Int>()
 
     val prefix = "§l[§d§lMa§f§ln§a§l10§e§lSlot§f§l]"
@@ -81,7 +79,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             if (!slot.spin1){
                 if (!slist.contains(0)) {
                     slist.add(0)
-                    //sripProcess(0)
+                    sripProcess(0)
                     loseProcess(0)
                     winCheck(0)
                 }
@@ -90,7 +88,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             if (!slot.spin2){
                 if (!slist.contains(1)) {
                     slist.add(1)
-                    //sripProcess(1)
+                    sripProcess(1)
                     loseProcess(1)
                     winCheck(1)
                 }
@@ -99,7 +97,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             if (!slot.spin3){
                 if (!slist.contains(2)) {
                     slist.add(2)
-                    //sripProcess(2)
+                    sripProcess(2)
                     loseProcess(2)
                     winCheck(2)
                 }
@@ -265,23 +263,23 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
     }
 
-   /* @Synchronized
+    @Synchronized
     fun sripProcess(num: Int){
+       val size = slist.size
 
         for (l in lose){
             if (l.contains(ItemStack(Material.AIR))){
                 if (l[num] != ItemStack(Material.AIR)){
-                    val size = stoplist.size
                     for (i in 0 until 20) {
                         if (frame[num].item == l[num] || frame[num + 3].item == l[num] || frame[num + 6].item == l[num]) {
                             when(size) {
-                                0 -> {
+                                1 -> {
                                     spin1()
                                     spin2()
                                     spin3()
                                 }
-                                1 -> {
-                                    when (stoplist[0]) {
+                                2 -> {
+                                    when (slist[0]) {
                                         0 -> {
                                             spin2()
                                             spin3()
@@ -296,7 +294,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                                         }
                                     }
                                 }
-                                2 -> {
+                                3 -> {
                                     when (num) {
                                         0 -> spin1()
                                         1 -> spin2()
@@ -312,7 +310,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }
         }
 
-    }*/
+    }
 
     fun comCheck(item: MutableList<ItemStack>): Boolean{
         return (frame[0].item == item[0] && frame[1].item == item[1] && frame[2].item == item[2]) || (frame[0].item == item[0] && frame[4].item == item[1] && frame[8].item == item[2]) ||

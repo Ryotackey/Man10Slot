@@ -118,6 +118,10 @@ class Man10Slot : JavaPlugin() {
 
         val config = loccon.getConfig() ?: return
 
+        if (!config.contains("location")){
+            return
+        }
+
         button1loc = loadLocationString(config, "button1loc")
         button2loc = loadLocationString(config, "button2loc")
         button3loc = loadLocationString(config, "button3loc")
