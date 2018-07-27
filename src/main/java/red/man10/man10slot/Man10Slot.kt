@@ -43,8 +43,6 @@ class Man10Slot : JavaPlugin() {
     override fun onEnable() {
         // Plugin startup logic
 
-        logger.info(this.dataFolder.absolutePath + "\\slots")
-
         loccon.saveDefaultConfig()
 
         slotfile.mkdir()
@@ -329,37 +327,149 @@ class Man10Slot : JavaPlugin() {
         return reel
     }
 
-    fun wining_itemCreate(itemstr: String, reel1: MutableList<ItemStack>, reel2: MutableList<ItemStack>, reel3: MutableList<ItemStack>): MutableList<ItemStack>{
+    fun wining_itemCreate(itemstr: String, reel1: MutableList<ItemStack>, reel2: MutableList<ItemStack>, reel3: MutableList<ItemStack>): MutableList<MutableList<ItemStack>>{
 
-        val win_item = mutableListOf<ItemStack>()
+        val list = mutableListOf<MutableList<ItemStack>>()
 
-        if (!itemstr.contains(Regex(",")))return win_item
+        if (!itemstr.contains(Regex(",")))return list
 
         val item = itemstr.split(Regex(","))
 
-        if (item.size > 3)return win_item
+        if (item.size == 9) {
 
-        for (i in 0 until item.size){
+            val win_item = mutableListOf<ItemStack>()
 
-            if (item[i] == "*"){
-                win_item.add(ItemStack(Material.AIR))
-            }else {
+            for (i in 0 until item.size) {
+
                 var num = 0
-
                 try {
                     num = item[i].toInt()
                 } catch (e: NumberFormatException) {
-                    return win_item
+                    return list
                 }
 
-                when (i) {
+                when (i % 3) {
                     0 -> win_item.add(reel1[num - 1])
                     1 -> win_item.add(reel2[num - 1])
                     2 -> win_item.add(reel3[num - 1])
                 }
             }
+
+            list.add(win_item)
+
+        }else if (item.size == 3){
+
+            val itemlist = mutableListOf<ItemStack>()
+
+            for (i in 0 until item.size) {
+
+                if (item[i] == "*") {
+                    itemlist.add(ItemStack(Material.AIR))
+                } else {
+
+                    var num = 0
+                    try {
+                        num = item[i].toInt()
+                    } catch (e: NumberFormatException) {
+                        return list
+                    }
+
+                    when (i % 3) {
+                        0 -> itemlist.add(reel1[num - 1])
+                        1 -> itemlist.add(reel2[num - 1])
+                        2 -> itemlist.add(reel3[num - 1])
+                    }
+                }
+            }
+
+            for (i1 in 0 until reel1.size){
+                for(i2 in 0 until reel2.size){
+                    for (i3 in 0 until reel3.size){
+
+                        val r1 = arrayOf(reel1[(i1 + 1) % reel1.size], reel1[i1 % reel1.size], reel1[(i1 + reel1.size - 1) % reel1.size])
+                        val r2 = arrayOf(reel2[(i2 + 1) % reel2.size], reel2[i2 % reel2.size], reel2[(i2 + reel2.size - 1) % reel2.size])
+                        val r3 = arrayOf(reel3[(i3 + 1) % reel3.size], reel3[i3 % reel3.size], reel3[(i3 + reel3.size - 1) % reel3.size])
+
+
+                        if (!itemlist.contains(ItemStack(Material.AIR))) {
+
+                            if ((r1[0] == itemlist[0] && r2[0] == itemlist[1] && r3[0] == itemlist[2]) || (r1[1] == itemlist[0] && r2[1] == itemlist[1] && r3[1] == itemlist[2]) || (r1[2] == itemlist[0] && r2[2] == itemlist[1] && r3[2] == itemlist[2]) ||
+                                    (r1[0] == itemlist[0] && r2[1] == itemlist[1] && r3[2] == itemlist[2]) || (r1[2] == itemlist[0] && r2[1] == itemlist[1] && r3[0] == itemlist[2])) {
+
+                                val win_item = mutableListOf(r1[0], r2[0], r3[0], r1[1], r2[1], r3[1], r1[2], r2[2], r3[2])
+
+                                list.add(win_item)
+                            }
+                        }else{
+                            val num = mutableListOf<Int>()
+
+                            var num2: Int? = null
+
+                            for (i in 0 until itemlist.size){
+                                if (itemlist[i] == ItemStack(Material.AIR)) num.add(i)
+                                else num2 = i
+                            }
+
+                            when(num.size){
+                                1->{
+                                    when(num[0]){
+                                        0->{
+                                            if ((r2[0] == itemlist[1] && r3[0] == itemlist[2]) || (r2[1] == itemlist[1] && r3[0] == itemlist[2]) || (r2[1] == itemlist[1] && r3[1] == itemlist[2]) || (r2[1] == itemlist[1] && r3[2] == itemlist[2]) || (r2[2] == itemlist[1] && r3[2] == itemlist[2])){
+                                                val win_item = mutableListOf(ItemStack(Material.AIR), r2[0], r3[0], ItemStack(Material.AIR), r2[1], r3[1], ItemStack(Material.AIR), r2[2], r3[2])
+                                                list.add(win_item)
+                                            }
+                                        }
+                                        1->{
+                                            if ((r1[0] == itemlist[0] && r3[0] == itemlist[2]) || (r1[0] == itemlist[0] && r3[2] == itemlist[2]) || (r1[1] == itemlist[0] && r3[1] == itemlist[2]) || (r1[2] == itemlist[0] && r3[2] == itemlist[2]) || (r1[2] == itemlist[0] && r3[0] == itemlist[2])){
+                                                val win_item = mutableListOf(r1[0], ItemStack(Material.AIR), r3[0], r1[1], ItemStack(Material.AIR), r3[1], r1[2], ItemStack(Material.AIR), r3[2])
+                                                list.add(win_item)
+                                            }
+                                        }
+                                        2->{
+                                            if ((r2[0] == itemlist[1] && r1[0] == itemlist[0]) || (r2[1] == itemlist[1] && r1[0] == itemlist[0]) || (r2[1] == itemlist[1] && r1[1] == itemlist[0]) || (r2[1] == itemlist[1] && r1[2] == itemlist[0]) || (r2[2] == itemlist[1] && r1[2] == itemlist[0])){
+                                                val win_item = mutableListOf(r1[0], r2[0], ItemStack(Material.AIR), r1[1], r2[1], ItemStack(Material.AIR), r1[2], r2[2], ItemStack(Material.AIR))
+                                                list.add(win_item)
+                                            }
+                                        }
+                                    }
+                                }
+                                2->{
+                                    when(num2){
+
+                                        0->{
+                                            if (r1[0] == itemlist[0] || r1[1] == itemlist[0] || r1[2] == itemlist[0]){
+                                                val win_item = mutableListOf(r1[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r1[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r1[2], ItemStack(Material.AIR), ItemStack(Material.AIR))
+                                                list.add(win_item)
+                                            }
+                                        }
+                                        1->{
+                                            if (r2[0] == itemlist[1] || r2[1] == itemlist[1] || r2[2] == itemlist[1]){
+                                                val win_item = mutableListOf(ItemStack(Material.AIR), r2[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r2[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r2[2], ItemStack(Material.AIR))
+                                                list.add(win_item)
+                                            }
+                                        }
+                                        2->{
+                                            if (r3[0] == itemlist[2] || r3[1] == itemlist[2] || r3[2] == itemlist[2]){
+                                                val win_item = mutableListOf(ItemStack(Material.AIR), ItemStack(Material.AIR), r3[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r3[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r3[2])
+                                                list.add(win_item)
+                                            }
+                                        }
+
+                                    }
+                                }
+                                3->{
+                                    val win_item = mutableListOf(ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR))
+                                    list.add(win_item)
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
         }
-        return win_item
+        return list
     }
 
     fun fileToConfig(list: Array<File>): MutableList<FileConfiguration>{
@@ -438,7 +548,7 @@ class Man10Slot : JavaPlugin() {
         var block: Material? = null
 
         val wining_name = HashMap<String, String>()
-        val wining_item = HashMap<String, MutableList<ItemStack>>()
+        val wining_item = HashMap<String, MutableList<MutableList<ItemStack>>>()
         val wining_prize = HashMap<String, Double>()
         val wining_stockodds = HashMap<String, Double>()
         val wining_chance = HashMap<Double, String>()

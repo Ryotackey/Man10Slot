@@ -1,5 +1,6 @@
 package red.man10.man10slot
 
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.block.Sign
 import org.bukkit.entity.EntityType
@@ -220,7 +221,7 @@ class Event(val plugin: Man10Slot): Listener {
 
             slot.p = p
 
-            p.sendMessage(win)
+            Bukkit.broadcastMessage(win)
 
             slot.spincount++
 

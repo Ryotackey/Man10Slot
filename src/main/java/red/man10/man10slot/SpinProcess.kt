@@ -17,12 +17,12 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
     val reel2 = slot.reel2
     val reel3 = slot.reel3
 
-    val sleep: Long = 100
+    val sleep: Long = 80
     var step = 0
 
     val frame = mutableListOf<ItemFrame>()
 
-    var win_item: MutableList<ItemStack>? = null
+    var win_item: MutableList<MutableList<ItemStack>>? = null
     var win_prize: Double? = null
     var win_name: String? = null
     var win_odds: Double? = null
@@ -30,7 +30,8 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
     var win_command: MutableList<String>? = null
     var win_sound: Man10Slot.Sound? = null
 
-    var slotnum = -1
+    var winlist = mutableListOf<ItemStack>()
+    var reachlist = mutableListOf<MutableList<ItemStack>>()
 
     val lose = mutableListOf<MutableList<ItemStack>>()
     val slist = mutableListOf<Int>()
@@ -49,32 +50,29 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
         }
 
         if (win != "0"){
-            win_item = slot.wining_item[win]
+            win_item = slot.wining_item[win]!!
             win_prize = slot.wining_prize[win]
             win_name = slot.wining_name[win]
             win_odds = slot.wining_stockodds[win]
             win_step = slot.wining_step[win]
             win_command = slot.wining_command[win]
             win_sound = slot.wining_sound[win]
-            p.sendMessage(win_item!!.toString())
         }
 
         val list = slot.wining_item
 
         for (i in list){
-            if (win != "0"){
-                if (win_item!! == i.value)continue
-                if (win_item!!.contains(ItemStack(Material.AIR))){
-                    for (j in 0 until i.value.size){
-                        if (win_item!![j] == i.value[j])i.value[j].type = Material.AIR
+            loop@for(j in i.value){
+                if (win != "0"){
+                    for (l in win_item!!){
+                        if (l == j) continue@loop
                     }
                 }
+                lose.add(j)
             }
-            lose.add(i.value)
         }
 
         while (true){
-            step++
 
             if (!slot.spin1){
                 if (!slist.contains(0)) {
@@ -90,7 +88,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                     slist.add(1)
                     sripProcess(1)
                     loseProcess(1)
-                    winCheck(1)
+                    winCheck2(1)
                 }
             }else spin2()
 
@@ -99,7 +97,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                     slist.add(2)
                     sripProcess(2)
                     loseProcess(2)
-                    winCheck(2)
+                    winCheck3(2)
                 }
             }else spin3()
 
@@ -107,38 +105,14 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
                 if (win != "0"){
 
-                    if (!win_item!!.contains(ItemStack(Material.AIR))) {
-                        if (comCheck2(win_item!!)) {
-                            hit()
-                            return
-                        } else {
-                            p.sendMessage("$prefix§c外れました")
-                            return
-                        }
-                    }else{
-                        var check1 = false
-                        var check2 = false
-                        var check3 = false
-                        if (win_item!![0] != ItemStack(Material.AIR)){
-                            if (win_item!![0] == frame[0].item || win_item!![0] == frame[3].item || win_item!![0] == frame[6].item) check1 = true
-                        }else check1 = true
-
-                        if (win_item!![1] != ItemStack(Material.AIR)){
-                            if (win_item!![1] == frame[1].item || win_item!![1] == frame[4].item || win_item!![1] == frame[7].item) check2 = true
-                        }else check2 = true
-
-                        if (win_item!![2] != ItemStack(Material.AIR)){
-                            if (win_item!![2] == frame[2].item || win_item!![2] == frame[5].item || win_item!![2] == frame[8].item) check3 = true
-                        }else check3 = true
-
-                        if (check1 && check2 && check3){
-                            hit()
-                            return
-                        } else {
-                            p.sendMessage("$prefix§c外れました")
-                            return
-                        }
+                    if (comCheck2(winlist)) {
+                        hit()
+                        return
+                    } else {
+                        p.sendMessage("$prefix§c外れました")
+                        return
                     }
+
 
                 }else{
                     p.sendMessage("$prefix§c外れました")
@@ -152,6 +126,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                 slot.spin2 = false
                 slot.spin3 = false
             }
+            step++
             sleep(sleep)
         }
 
@@ -186,9 +161,6 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
         p.sendMessage(prefix + "§e§lおめでとうございます！${win_name!!}§e§lです！")
         slot.win = "0"
         val totalprize = win_prize!! + win_odds!!*slot.pool!!.balance
-
-        Bukkit.broadcastMessage(prefix + "§e${p.displayName}§aさんは§l${slot.slot_name}§aに勝利し§6§l$${totalprize}§a" +
-                "手に入れた！！")
 
         if (win_command != null) {
             plugin.runCommand(win_command!!, win_name!!, p, slot.slot_name, totalprize)
@@ -236,19 +208,19 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                         when (num) {
 
                             0 -> {
-                                if (comCheck(l)) {
+                                if (comCheck2(l)) {
                                     spin1()
                                 } else break@loop
                             }
 
                             1 -> {
-                                if (comCheck(l)) {
+                                if (comCheck2(l)) {
                                     spin2()
                                 } else break@loop
                             }
 
                             2 -> {
-                                if (comCheck(l)) {
+                                if (comCheck2(l)) {
                                     spin3()
                                 } else break@loop
                             }
@@ -265,13 +237,13 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
     @Synchronized
     fun sripProcess(num: Int){
-       val size = slist.size
+        val size = slist.size
 
         for (l in lose){
             if (l.contains(ItemStack(Material.AIR))){
                 if (l[num] != ItemStack(Material.AIR)){
                     for (i in 0 until 20) {
-                        if (frame[num].item == l[num] || frame[num + 3].item == l[num] || frame[num + 6].item == l[num]) {
+                        if (frame[num].item == l[num] && frame[num+3].item == l[num+3] && frame[num+6].item == l[num+6]) {
                             when(size) {
                                 1 -> {
                                     spin1()
@@ -312,150 +284,123 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
     }
 
-    fun comCheck(item: MutableList<ItemStack>): Boolean{
-        return (frame[0].item == item[0] && frame[1].item == item[1] && frame[2].item == item[2]) || (frame[0].item == item[0] && frame[4].item == item[1] && frame[8].item == item[2]) ||
-                    (frame[3].item == item[0] && frame[4].item == item[1] && frame[5].item == item[2]) || (frame[6].item == item[0] && frame[7].item == item[1] && frame[8].item == item[2]) ||
-                    (frame[6].item == item[0] && frame[4].item == item[1] && frame[2].item == item[2])
+    @Synchronized
+    fun comCheck(item: MutableList<ItemStack>, num: Int): Boolean{
+
+        val r1 = arrayOf(reel1[(step + 1) % reel1.size], reel1[step % reel1.size], reel1[(step + reel1.size - 1) % reel1.size])
+
+        val r2 = arrayOf(reel2[(step + 1) % reel2.size], reel2[step % reel2.size], reel2[(step + reel2.size - 1) % reel2.size])
+
+        val r3 = arrayOf(reel3[(step + 1) % reel3.size], reel3[step % reel3.size], reel3[(step + reel3.size - 1) % reel3.size])
+
+        return when (num) {
+            0 -> (r1[0] == item[0] && r1[1] == item[3] && r1[2] == item[6])
+            1 -> (r2[0] == item[1] && r2[1] == item[4] && r2[2] == item[7])
+            2 -> (r3[0] == item[2] && r3[1] == item[5] && r3[2] == item[8])
+            else -> false
+        }
     }
 
+    @Synchronized
     fun comCheck2(item: MutableList<ItemStack>): Boolean{
-        return (frame[0].item == item[0] && frame[1].item == item[1] && frame[2].item == item[2]) || (frame[0].item == item[0] && frame[4].item == item[1] && frame[8].item == item[2]) ||
-                (frame[3].item == item[0] && frame[4].item == item[1] && frame[5].item == item[2]) ||
-                (frame[6].item == item[0] && frame[7].item == item[1] && frame[8].item == item[2]) || (frame[6].item == item[0] && frame[4].item == item[1] && frame[2].item == item[2])
-    }
-
-    fun reachCheck(item: MutableList<ItemStack>, num: Int, num2: Int): Boolean{
-
-        val r1_0 = reel1[(step+1)%reel1.size]
-        val r1_1 = reel1[step%reel1.size]
-        val r1_2 = reel1[(step+reel1.size-1)%reel1.size]
-
-        val r2_0 = reel2[(step+1)%reel2.size]
-        val r2_1 = reel2[step%reel2.size]
-        val r2_2 = reel2[(step+reel2.size-1)%reel2.size]
-
-        val r3_0 = reel3[(step+1)%reel3.size]
-        val r3_1 = reel3[step%reel3.size]
-        val r3_2 = reel3[(step+reel3.size-1)%reel3.size]
-
-        when(num2){
-
-            0->{
-                return if (num == 1){
-                    (frame[0].item == item[0] && (r2_0 == item[1] || r2_1 == item[1])) || (frame[3].item == item[0] && r2_1 == item[1]) || (frame[6].item == item[0] && (r2_2 == item[1] || r2_1 == item[1]))
-                }else{
-                    (frame[0].item == item[0] && (r3_0 == item[2] || r3_2 == item[2])) || (frame[3].item == item[0] && r3_1 == item[2]) || (frame[6].item == item[0] && (r3_2 == item[2] || r3_0 == item[2]))
-                }
+        if (!item.contains(ItemStack(Material.AIR))) {
+            return (frame[0].item == item[0] && frame[1].item == item[1] && frame[2].item == item[2] && frame[3].item == item[3] && frame[4].item == item[4] && frame[5].item == item[5] && frame[6].item == item[6] && frame[7].item == item[7] && frame[8].item == item[8])
+        }else{
+            val num = mutableListOf<Int>()
+            var num2 = 0
+            for (i in 0 until item.size){
+                if (item[i] == ItemStack(Material.AIR)) num.add(i)
+                else num2 = i
             }
-            1->{
-                return if (num == 0){
-                    (frame[1].item == item[1] && r1_0 == item[0]) || (frame[4].item == item[1] && (r1_0 == item[0] || r1_1 == item[0] || r1_2 == item[0])) || (frame[7].item == item[1] && r1_2 == item[0])
-                }else{
-                    (frame[1].item == item[1] && r3_0 == item[2]) || (frame[4].item == item[1] && (r3_0 == item[2] || r3_1 == item[2] || r3_2 == item[2])) || (frame[7].item == item[1] && r3_2 == item[2])
+
+            when(num.size){
+                3->{
+                    when(num[0]%3){
+                        0->{
+                            return ((frame[1].item == item[1] && frame[2].item == item[2]) || (frame[4].item == item[4] && frame[2].item == item[2]) || (frame[4].item == item[4] && frame[5].item == item[5]) || (frame[4].item == item[4] && frame[8].item == item[8]) || (frame[7].item == item[7] && frame[8].item == item[8]))
+                        }
+                        1->{
+                            return ((frame[0].item == item[0] && frame[2].item == item[2]) || (frame[3].item == item[3] && frame[2].item == item[2]) || (frame[3].item == item[3] && frame[5].item == item[5]) || (frame[3].item == item[3] && frame[8].item == item[8]) || (frame[6].item == item[6] && frame[8].item == item[8]))
+                        }
+                        2->{
+                            return ((frame[1].item == item[1] && frame[0].item == item[0]) || (frame[4].item == item[4] && frame[0].item == item[0]) || (frame[4].item == item[4] && frame[3].item == item[3]) || (frame[4].item == item[4] && frame[6].item == item[6]) || (frame[7].item == item[7] && frame[6].item == item[6]))
+                        }
+                    }
                 }
-            }
-            2->{
-                return if (num == 1){
-                    (frame[2].item == item[2] && (r2_0 == item[1] || r2_1 == item[1])) || (frame[5].item == item[2] && r2_1 == item[1]) || (frame[8].item == item[2] && (r2_2 == item[1] || r2_1 == item[1]))
-                }else{
-                    (frame[2].item == item[2] && (r1_0 == item[0] || r1_2 == item[0])) || (frame[5].item == item[2] && r1_1 == item[0]) || (frame[8].item == item[2] && (r1_2 == item[0] || r1_1 == item[0]))
+                6->{
+                    return (frame[num2].item == item[num2] || frame[num2+3].item == item[num2] || frame[num2+6].item == item[num2])
+                }
+                9->{
+                    return true
                 }
             }
         }
         return false
     }
 
+    @Synchronized
     fun winCheck(num: Int){
 
         var count = -1
 
-        var pass = false
-
         val size = slist.size
 
-        p.sendMessage(slist.toString())
+        var pass = false
 
         if (win != "0"){
 
             val item = win_item!!
 
-            if (!win_item!!.contains(ItemStack(Material.AIR))) {
-
-                when (item[num]) {
-
-                    frame[num].item -> {
-                        if (slotnum == 0 || slotnum == -1) {
-                            slotnum = 0
-                            pass = true
-                        }
+            if (reachlist.size == 0) {
+                for (i in item) {
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        reachlist.add(i)
+                        pass = true
                     }
-
-                    frame[num + 3].item -> {
-                        if (slotnum == 1 || slotnum == -1) {
-                            slotnum = 1
-                            pass = true
-                        }
-                    }
-
-                    frame[num + 6].item -> {
-                        if (slotnum == 2 || slotnum == -1) {
-                            slotnum = 2
-                            pass = true
-                        }
-                    }
-
-                    else -> {
-                        if (slotnum == -1) {
-                            val r = Random().nextInt(3)
-                            slotnum = r
-                        }
-                    }
-
                 }
+            }else if (winlist.size == 0){
+                for (i in reachlist){
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        winlist = i
+                        pass = true
+                        break
+                    }
+                }
+                if (winlist.size == 0){
+                    winlist = reachlist[Random().nextInt(reachlist.size)]
+                }
+            }else{
+                if (winlist[num] == frame[num].item && winlist[num + 3] == frame[num + 3].item && winlist[num + 6] == frame[num + 6].item) {
+                    pass = true
+                }
+            }
 
-                p.sendMessage("slotnum$slotnum")
+            if (reachlist.size == 0){
+                p.sendMessage(item.size.toString())
+                val r = Random().nextInt(item.size)
+                reachlist.add(item[r])
+                winlist = item[r]
+            }
 
-                if (!pass) {
-                    if (slotnum != -1) {
+            p.sendMessage(winlist.toString())
 
-                        loop@ for (i in 0 until win_step!!) {
+            if (!pass) {
 
-                            val r1 = arrayOf(reel1[(step + 1) % reel1.size], reel1[step % reel1.size], reel1[(step + reel1.size - 1) % reel1.size])
+                if (reachlist[0][num] != ItemStack(Material.AIR)) {
 
-                            val r2 = arrayOf(reel2[(step + 1) % reel2.size], reel2[step % reel2.size], reel2[(step + reel2.size - 1) % reel2.size])
-
-                            val r3 = arrayOf(reel3[(step + 1) % reel3.size], reel3[step % reel3.size], reel3[(step + reel3.size - 1) % reel3.size])
-
-                            when (num) {
-                                0 -> {
-                                    if (r1[slotnum] == item[num]) {
-                                        count = i
-                                        break@loop
-                                    }
-                                }
-                                1 -> {
-                                    if (r2[slotnum] == item[num]) {
-                                        count = i
-                                        break@loop
-                                    }
-                                }
-                                2 -> {
-                                    if (r3[slotnum] == item[num]) {
-                                        count = i
-                                        break@loop
-                                    }
-                                }
-                            }
-                            step++
+                    loop@ for (i in 0 until win_step!!) {
+                        if (comCheck(winlist, num)) {
+                            count = i
+                            break@loop
                         }
+                        step++
                     }
 
-                    p.sendMessage("count$count")
+                    p.sendMessage("count:"+ count.toString())
 
                     if (count >= 0) {
                         step -= count
                         for (i in 0..count) {
-                            p.sendMessage("a")
                             when (size) {
                                 1 -> {
                                     spin1()
@@ -489,6 +434,213 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                             step++
                             sleep(sleep)
                         }
+
+                    }
+                }
+            }
+        }
+    }
+
+    @Synchronized
+    fun winCheck2(num: Int){
+
+        var count = -1
+
+        val size = slist.size
+
+        var pass = false
+
+        if (win != "0"){
+
+            val item = win_item!!
+
+            if (reachlist.size == 0) {
+                for (i in item) {
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        reachlist.add(i)
+                        pass = true
+                    }
+                }
+            }else if (winlist.size == 0){
+                for (i in reachlist){
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        winlist = i
+                        pass = true
+                        break
+                    }
+                }
+                if (winlist.size == 0){
+                    winlist = reachlist[Random().nextInt(reachlist.size)]
+                }
+            }else{
+                if (winlist[num] == frame[num].item && winlist[num + 3] == frame[num + 3].item && winlist[num + 6] == frame[num + 6].item) {
+                    pass = true
+                }
+            }
+
+            if (reachlist.size == 0){
+                p.sendMessage(item.size.toString())
+                val r = Random().nextInt(item.size)
+                reachlist.add(item[r])
+                winlist = item[r]
+            }
+
+            p.sendMessage(winlist.toString())
+
+            if (!pass) {
+
+                if (reachlist[0][num] != ItemStack(Material.AIR)) {
+
+                    loop@ for (i in 0 until win_step!!) {
+                        if (comCheck(winlist, num)) {
+                            count = i
+                            break@loop
+                        }
+                        step++
+                    }
+
+                    p.sendMessage("count:"+ count.toString())
+
+                    if (count >= 0) {
+                        step -= count
+                        for (i in 0..count) {
+                            when (size) {
+                                1 -> {
+                                    spin1()
+                                    spin2()
+                                    spin3()
+                                }
+                                2 -> {
+                                    when (slist[0]) {
+                                        0 -> {
+                                            spin2()
+                                            spin3()
+                                        }
+                                        1 -> {
+                                            spin1()
+                                            spin3()
+                                        }
+                                        2 -> {
+                                            spin1()
+                                            spin2()
+                                        }
+                                    }
+                                }
+                                3 -> {
+                                    when (num) {
+                                        0 -> spin1()
+                                        1 -> spin2()
+                                        2 -> spin3()
+                                    }
+                                }
+                            }
+                            step++
+                            sleep(sleep)
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    @Synchronized
+    fun winCheck3(num: Int){
+
+        var count = -1
+
+        val size = slist.size
+
+        var pass = false
+
+        if (win != "0"){
+
+            val item = win_item!!
+
+            if (reachlist.size == 0) {
+                for (i in item) {
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        reachlist.add(i)
+                        pass = true
+                    }
+                }
+            }else if (winlist.size == 0){
+                for (i in reachlist){
+                    if (i[num] == frame[num].item && i[num + 3] == frame[num + 3].item && i[num + 6] == frame[num + 6].item) {
+                        winlist = i
+                        pass = true
+                        break
+                    }
+                }
+                if (winlist.size == 0){
+                    winlist = reachlist[Random().nextInt(reachlist.size)]
+                }
+            }else{
+                if (winlist[num] == frame[num].item && winlist[num + 3] == frame[num + 3].item && winlist[num + 6] == frame[num + 6].item) {
+                    pass = true
+                }
+            }
+
+            if (reachlist.size == 0){
+                p.sendMessage(item.size.toString())
+                val r = Random().nextInt(item.size)
+                reachlist.add(item[r])
+                winlist = item[r]
+            }
+
+            p.sendMessage(winlist.toString())
+
+            if (!pass) {
+
+                if (reachlist[0][num] != ItemStack(Material.AIR)) {
+
+                    loop@ for (i in 0 until win_step!!) {
+                        if (comCheck(winlist, num)) {
+                            count = i
+                            break@loop
+                        }
+                        step++
+                    }
+
+                    p.sendMessage("count:"+ count.toString())
+
+                    if (count >= 0) {
+                        step -= count
+                        for (i in 0..count) {
+                            when (size) {
+                                1 -> {
+                                    spin1()
+                                    spin2()
+                                    spin3()
+                                }
+                                2 -> {
+                                    when (slist[0]) {
+                                        0 -> {
+                                            spin2()
+                                            spin3()
+                                        }
+                                        1 -> {
+                                            spin1()
+                                            spin3()
+                                        }
+                                        2 -> {
+                                            spin1()
+                                            spin2()
+                                        }
+                                    }
+                                }
+                                3 -> {
+                                    when (num) {
+                                        0 -> spin1()
+                                        1 -> spin2()
+                                        2 -> spin3()
+                                    }
+                                }
+                            }
+                            step++
+                            sleep(sleep)
+                        }
+
                     }
                 }
             }

@@ -25,8 +25,8 @@ class Command(val plugin: Man10Slot): CommandExecutor {
                 if (args[0].equals("list", ignoreCase = true)){
                     for (i in plugin.slotmap){
                         p.sendMessage("${i.key}")
-                        for (j in i.value.wining_name){
-                            p.sendMessage(j.key)
+                        for (j in i.value.wining_item){
+                            p.sendMessage(j.value.size.toString())
                         }
                     }
                 }
