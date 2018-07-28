@@ -25,9 +25,7 @@ class Command(val plugin: Man10Slot): CommandExecutor {
                 if (args[0].equals("list", ignoreCase = true)){
                     for (i in plugin.slotmap){
                         p.sendMessage("${i.key}")
-                        for (j in i.value.wining_item){
-                            p.sendMessage(j.value.size.toString())
-                        }
+                        p.sendMessage(i.value.spin_particle.toString())
                     }
                 }
 
@@ -148,9 +146,14 @@ class Command(val plugin: Man10Slot): CommandExecutor {
                     p.sendMessage("§aシュミレーション結果")
                     p.sendMessage("§l${amount}回中")
 
+                    var c = 0
+
                     for (i in count){
                         p.sendMessage("§a§l${i.key} §f§l: §e§l${i.value}回")
+                        c += i.value
                     }
+
+                    p.sendMessage("§l総当たり回数§e§l${c}回")
 
                 }
             }

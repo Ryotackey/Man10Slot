@@ -187,7 +187,10 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
         if (slot.win_particle[win] != null) {
             val par = slot.win_particle[win]!!
-            frame[4].location.world.spawnParticle(par.par!!, frame[4].location, par.count!!)
+            val r = Random().nextDouble()
+            if (r <= par.chance!!) {
+                frame[4].location.world.spawnParticle(par.par!!, frame[4].location, par.count!!)
+            }
         }
 
         if (slot.wincount.containsKey(win)){
@@ -376,13 +379,10 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }
 
             if (reachlist.size == 0){
-                p.sendMessage(item.size.toString())
                 val r = Random().nextInt(item.size)
                 reachlist.add(item[r])
                 winlist = item[r]
             }
-
-            p.sendMessage(winlist.toString())
 
             if (!pass) {
 
@@ -395,8 +395,6 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                         }
                         step++
                     }
-
-                    p.sendMessage("count:"+ count.toString())
 
                     if (count >= 0) {
                         step -= count
@@ -479,13 +477,10 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }
 
             if (reachlist.size == 0){
-                p.sendMessage(item.size.toString())
                 val r = Random().nextInt(item.size)
                 reachlist.add(item[r])
                 winlist = item[r]
             }
-
-            p.sendMessage(winlist.toString())
 
             if (!pass) {
 
@@ -498,8 +493,6 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                         }
                         step++
                     }
-
-                    p.sendMessage("count:"+ count.toString())
 
                     if (count >= 0) {
                         step -= count
@@ -582,13 +575,10 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             }
 
             if (reachlist.size == 0){
-                p.sendMessage(item.size.toString())
                 val r = Random().nextInt(item.size)
                 reachlist.add(item[r])
                 winlist = item[r]
             }
-
-            p.sendMessage(winlist.toString())
 
             if (!pass) {
 
@@ -602,7 +592,6 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                         step++
                     }
 
-                    p.sendMessage("count:"+ count.toString())
 
                     if (count >= 0) {
                         step -= count

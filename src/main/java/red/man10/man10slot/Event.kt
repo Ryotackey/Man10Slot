@@ -181,7 +181,7 @@ class Event(val plugin: Man10Slot): Listener {
 
                 val ran = Random().nextDouble()
 
-                if (i.key > ran) win = i.value
+                if (i.key >= ran) win = i.value
             }
 
             if (slot.win != "0"){
@@ -189,14 +189,15 @@ class Event(val plugin: Man10Slot): Listener {
             }
 
             if (win != "0"){
-                if (slot.wining_con[win]!!){
-                    slot.win = win
-                }
 
-                if (slot.wining_light[win]!!){
+                if (slot.wining_light[win]!! && slot.win == "0"){
                     val bl = plugin.lightloc[key]!!.world.getBlockAt(plugin.lightloc[key]!!)
                     slot.block = bl.type
                     plugin.lightloc[key]!!.block.type = Material.REDSTONE_BLOCK
+                }
+
+                if (slot.wining_con[win]!!){
+                    slot.win = win
                 }
 
                 if (slot.wining_lightsound[win] != null){
@@ -206,7 +207,10 @@ class Event(val plugin: Man10Slot): Listener {
 
                 if (slot.light_particle[win] != null) {
                     val par = slot.light_particle[win]!!
-                    plugin.frameloc[key]!![4].world.spawnParticle(par.par!!, plugin.frameloc[key]!![4], par.count!!)
+                    val r = Random().nextDouble()
+                    if (r <= par.chance!!) {
+                        plugin.frameloc[key]!![4].world.spawnParticle(par.par!!, plugin.frameloc[key]!![4], par.count!!)
+                    }
                 }
             }
 
@@ -221,9 +225,15 @@ class Event(val plugin: Man10Slot): Listener {
 
             slot.p = p
 
-            Bukkit.broadcastMessage(win)
-
             slot.spincount++
+
+            if (slot.spin_particle != null){
+                val par = slot.spin_particle!!
+                val r = Random().nextDouble()
+                if (r <= par.chance!!){
+                    p.location.world.spawnParticle(par.par,  plugin.frameloc[key]!![4], par.count!!)
+                }
+            }
 
             val spin = SpinProcess(plugin, p, win, slot, key)
             spin.start()

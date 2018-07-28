@@ -227,6 +227,14 @@ class Man10Slot : JavaPlugin() {
 
                 slot.stock = config.getDouble("$key.general_setting.stock")
 
+                if (config.contains("$key.general_setting.spin_particle")){
+                    val par = Particle()
+                    par.par = org.bukkit.Particle.valueOf(config.getString("$key.general_setting.spin_particle.particle"))
+                    par.count = config.getInt("$key.general_setting.spin_particle.count")
+                    par.chance = config.getDouble("$key.general_setting.spin_particle.chance")
+                    slot.spin_particle = par
+                }
+
                 for (win in config.getConfigurationSection("$key.wining_setting").getKeys(false)){
 
                     slot.wining_name[win] = config.getString("$key.wining_setting.$win.name")
@@ -259,6 +267,7 @@ class Man10Slot : JavaPlugin() {
                         val par = Particle()
                         par.par = org.bukkit.Particle.valueOf(config.getString("$key.wining_setting.$win.win_particle.particle"))
                         par.count = config.getInt("$key.wining_setting.$win.win_particle.count")
+                        par.chance = config.getDouble("$key.wining_setting.$win.win_particle.chance")
                         slot.win_particle[win] = par
                     }
 
@@ -266,6 +275,7 @@ class Man10Slot : JavaPlugin() {
                         val par = Particle()
                         par.par = org.bukkit.Particle.valueOf(config.getString("$key.wining_setting.$win.light_particle.particle"))
                         par.count = config.getInt("$key.wining_setting.$win.light_particle.count")
+                        par.chance = config.getDouble("$key.wining_setting.$win.light_particle.chance")
                         slot.light_particle[win] = par
                     }
 
@@ -547,6 +557,8 @@ class Man10Slot : JavaPlugin() {
         var win = "0"
         var block: Material? = null
 
+        var spin_particle: Particle? = null
+
         val wining_name = HashMap<String, String>()
         val wining_item = HashMap<String, MutableList<MutableList<ItemStack>>>()
         val wining_prize = HashMap<String, Double>()
@@ -590,5 +602,6 @@ class Man10Slot : JavaPlugin() {
     class Particle{
         var par: org.bukkit.Particle? = null
         var count: Int? = null
+        var chance: Double? = null
     }
 }
