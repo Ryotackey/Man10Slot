@@ -1,10 +1,14 @@
 package red.man10.man10slot
 
+import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import org.bukkit.inventory.Inventory
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class Command(val plugin: Man10Slot): CommandExecutor {
@@ -23,23 +27,64 @@ class Command(val plugin: Man10Slot): CommandExecutor {
             1->{
 
                 if (args[0].equals("list", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
                     for (i in plugin.slotmap){
-                        p.sendMessage("${i.key}")
-                        p.sendMessage(i.value.spin_particle.toString())
+                        p.sendMessage(i.key)
                     }
+                    return true
                 }
 
                 if (args[0].equals("save", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
                     plugin.locationSave()
                     p.sendMessage(plugin.prefix + "§asave complete")
                     return true
                 }
 
                 if (args[0].equals("reload", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
                     plugin.slotmap.clear()
                     plugin.slotLoad()
                     p.sendMessage(plugin.prefix + "§areload complete")
                     return true
+                }
+
+                if (args[0].equals("on", ignoreCase = true)){
+
+                    if (!p.hasPermission("mslot.setting")) return true
+
+                    if (plugin.enable){
+                        p.sendMessage("${plugin.prefix}§cすでにオンです")
+                        return true
+                    }
+
+                    plugin.loccon.getConfig()!!.set("enable", true)
+                    plugin.loccon.saveConfig()
+                    plugin.enable = true
+
+                    p.sendMessage("${plugin.prefix}§aオンにしました")
+
+                    return true
+
+                }
+
+                if (args[0].equals("off", ignoreCase = true)){
+
+                    if (!p.hasPermission("mslot.setting")) return true
+
+                    if (!plugin.enable){
+                        p.sendMessage("${plugin.prefix}§cすでにオフです")
+                        return true
+                    }
+
+                    plugin.loccon.getConfig()!!.set("enable", false)
+                    plugin.loccon.saveConfig()
+                    plugin.enable = false
+
+                    p.sendMessage("${plugin.prefix}§aオフにしました")
+
+                    return true
+
                 }
 
             }
@@ -47,6 +92,7 @@ class Command(val plugin: Man10Slot): CommandExecutor {
             2->{
 
                 if (args[0].equals("create", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
 
                     if (!plugin.slotmap.containsKey(args[1])){
                         p.sendMessage(plugin.prefix + "§cそのスロットは見つかりませんでした")
@@ -65,6 +111,7 @@ class Command(val plugin: Man10Slot): CommandExecutor {
                 }
 
                 if (args[0].equals("remove", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
 
                     if (!plugin.signloc.containsKey(args[1])){
                         p.sendMessage(plugin.prefix + "§cそのスロットは設置されていません")
@@ -78,6 +125,7 @@ class Command(val plugin: Man10Slot): CommandExecutor {
                 }
 
                 if (args[0].equals("show", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
                     if (!plugin.slotmap.containsKey(args[1])){
                         p.sendMessage(plugin.prefix + "§cそのスロットは見つかりませんでした")
                         return true
@@ -101,6 +149,7 @@ class Command(val plugin: Man10Slot): CommandExecutor {
 
             3->{
                 if (args[0].equals("simulate", ignoreCase = true)){
+                    if (!p.hasPermission("mslot.setting")) return true
 
                     if (!plugin.slotmap.containsKey(args[1])) {
                         p.sendMessage(plugin.prefix + "§cこのスロットは存在しません")
@@ -120,7 +169,17 @@ class Command(val plugin: Man10Slot): CommandExecutor {
 
                     val slot = plugin.slotmap[args[1]]!!
 
-                    val winlist = plugin.mapSort(slot.wining_chance)
+                    val map = HashMap<Double, String>()
+
+                    for (i in slot.wining_chance){
+
+                        val num = slot.chancenum % i.value.size
+
+                        map[i.value[num]] = i.key
+
+                    }
+
+                    val winlist = plugin.mapSort(map)
 
                     for (i in 0 until amount) {
 
@@ -155,7 +214,10 @@ class Command(val plugin: Man10Slot): CommandExecutor {
 
                     p.sendMessage("§l総当たり回数§e§l${c}回")
 
+                    return true
+
                 }
+
             }
 
         }

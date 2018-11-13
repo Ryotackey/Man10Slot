@@ -6,6 +6,7 @@ import org.bukkit.Material
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
+import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
@@ -17,6 +18,8 @@ import java.io.File
 import kotlin.collections.HashMap
 
 class Man10Slot : JavaPlugin() {
+
+    var enable = true
 
     val loccon = CustomConfig(this, "location.yml")
 
@@ -38,6 +41,8 @@ class Man10Slot : JavaPlugin() {
     val signloc = HashMap<String, Location>()
     val lightloc = HashMap<String, Location>()
 
+    val invmap = HashMap<Player, MutableList<Inventory>>()
+
     val prefix = "§l[§d§lMa§f§ln§a§l10§e§lSlot§f§l]"
 
     override fun onEnable() {
@@ -50,6 +55,10 @@ class Man10Slot : JavaPlugin() {
         slotLoad()
 
         loadLocation()
+
+        if (loccon.getConfig()!!.contains("enable")){
+            enable = loccon.getConfig()!!.getBoolean("enable")
+        }
 
         server.pluginManager.registerEvents(Event(this), this)
         getCommand("mslot").executor = Command(this)
@@ -96,6 +105,7 @@ class Man10Slot : JavaPlugin() {
         for (i in slotmap){
             config.set("poolid.${i.key}", i.value.pool!!.id)
             config.set("spincount.${i.key}", i.value.spincount)
+            config.set("chancenum.${i.key}", i.value.chancenum)
             for (j in i.value.wincount){
                 config.set("wincount.${i.key}.${j.key}", j.value)
             }
@@ -204,6 +214,8 @@ class Man10Slot : JavaPlugin() {
 
     fun slotLoad(){
 
+        logger.info("スロットデータのロードを開始します")
+
         val filelist = slotfile.listFiles()
 
         val slotlist = fileToConfig(filelist)
@@ -227,24 +239,53 @@ class Man10Slot : JavaPlugin() {
 
                 slot.stock = config.getDouble("$key.general_setting.stock")
 
-                if (config.contains("$key.general_setting.spin_particle")){
-                    val par = Particle()
-                    par.par = org.bukkit.Particle.valueOf(config.getString("$key.general_setting.spin_particle.particle"))
-                    par.count = config.getInt("$key.general_setting.spin_particle.count")
-                    par.chance = config.getDouble("$key.general_setting.spin_particle.chance")
-                    slot.spin_particle = par
+                if (config.contains("$key.spin_setting")){
+                    val effect = Effect()
+                    if (config.contains("$key.spin_setting.sound")){
+                        val sound1 = Sound()
+                        sound1.sound = org.bukkit.Sound.valueOf(config.getString("$key.spin_setting.sound.sound"))
+                        sound1.volume = config.getDouble("$key.spin_setting.sound.volume").toFloat()
+                        sound1.pitch = config.getDouble("$key.spin_setting.sound.pitch").toFloat()
+                        effect.sound = sound1
+                    }
+                    if (config.contains("$key.spin_setting.particle")){
+                        val par = Particle()
+                        par.par = org.bukkit.Particle.valueOf(config.getString("$key.spin_setting.particle.particle"))
+                        par.count = config.getInt("$key.spin_setting.particle.count")
+                        par.chance = config.getDouble("$key.spin_setting.particle.chance")
+                        effect.particle = par
+                    }
+                    if (config.contains("$key.spin_setting.command")){
+                        effect.command = config.getList("$key.spin_setting.command") as MutableList<String>
+                    }
+                    slot.spineffect = effect
+                }
+
+
+
+                if (loccon.getConfig()!!.contains("chancenum.$key")){
+                    slot.chancenum = loccon.getConfig()!!.getInt("chancenum.$key")
                 }
 
                 for (win in config.getConfigurationSection("$key.wining_setting").getKeys(false)){
+
+                    slot.wining_chance[win] = config.getList("$key.wining_setting.$win.chance") as MutableList<Double>
 
                     slot.wining_name[win] = config.getString("$key.wining_setting.$win.name")
                     slot.wining_item[win] = wining_itemCreate(config.getString("$key.wining_setting.$win.item"), reel1, reel2, reel3)
                     slot.wining_prize[win] = config.getDouble("$key.wining_setting.$win.prize")
                     slot.wining_stockodds[win] = config.getDouble("$key.wining_setting.$win.stockodds")
-                    slot.wining_chance[config.getDouble("$key.wining_setting.$win.chance")] = win
                     slot.wining_step[win] = config.getInt("$key.wining_setting.$win.step")
                     slot.wining_con[win] = config.getBoolean("$key.wining_setting.$win.flag_con")
                     slot.wining_light[win] = config.getBoolean("$key.wining_setting.$win.light")
+
+                    if (config.contains("$key.wining_setting.$win.chancechange")){
+                        slot.chancechange[win] = config.getInt("$key.wining_setting.$win.chancechange")
+                    }else slot.chancechange[win] = null
+
+                    if (config.contains("$key.wining_setting.$win.changegame")){
+                        slot.changegame[win] = config.getInt("$key.wining_setting.$win.changegame")
+                    }else slot.changegame[win] = -1
 
                     if (config.contains("$key.wining_setting.$win.command")) {
                         slot.wining_command[win] = config.getList("$key.wining_setting.$win.command") as MutableList<String>
@@ -288,13 +329,6 @@ class Man10Slot : JavaPlugin() {
 
                 }
 
-                val sound = Sound()
-                sound.sound = org.bukkit.Sound.valueOf(config.getString("$key.sound_setting.spinsound.sound"))
-                sound.volume = config.getDouble("$key.sound_setting.spinsound.volume").toFloat()
-                sound.pitch = config.getDouble("$key.sound_setting.spinsound.pitch").toFloat()
-
-                slot.spinSound = sound
-
                 if (loccon.getConfig()!!.contains("poolid.$key")){
                     slot.pool = MoneyPoolObject("Man10Slot", loccon.getConfig()!!.getLong("poolid.$key"))
                 }else{
@@ -311,7 +345,52 @@ class Man10Slot : JavaPlugin() {
                     }
                 }
 
+                if (config.contains("$key.stop_setting")){
+                    val effect = Effect()
+                    if (config.contains("$key.stop_setting.sound")){
+                        val sound1 = Sound()
+                        sound1.sound = org.bukkit.Sound.valueOf(config.getString("$key.stop_setting.sound.sound"))
+                        sound1.volume = config.getDouble("$key.stop_setting.sound.volume").toFloat()
+                        sound1.pitch = config.getDouble("$key.stop_setting.sound.pitch").toFloat()
+                        effect.sound = sound1
+                    }
+                    if (config.contains("$key.stop_setting.particle")){
+                        val par = Particle()
+                        par.par = org.bukkit.Particle.valueOf(config.getString("$key.stop_setting.particle.particle"))
+                        par.count = config.getInt("$key.stop_setting.particle.count")
+                        par.chance = config.getDouble("$key.stop_setting.particle.chance")
+                        effect.particle = par
+                    }
+                    if (config.contains("$key.stop_setting.command")){
+                        effect.command = config.getList("$key.stop_setting.command") as MutableList<String>
+                    }
+                    slot.stopeffect = effect
+                }
+
+                if (config.contains("$key.change_setting")){
+                    val effect = Effect()
+                    if (config.contains("$key.change_setting.sound")){
+                        val sound1 = Sound()
+                        sound1.sound = org.bukkit.Sound.valueOf(config.getString("$key.change_setting.sound.sound"))
+                        sound1.volume = config.getDouble("$key.change_setting.sound.volume").toFloat()
+                        sound1.pitch = config.getDouble("$key.change_setting.sound.pitch").toFloat()
+                        effect.sound = sound1
+                    }
+                    if (config.contains("$key.change_setting.particle")){
+                        val par = Particle()
+                        par.par = org.bukkit.Particle.valueOf(config.getString("$key.change_setting.particle.particle"))
+                        par.count = config.getInt("$key.change_setting.particle.count")
+                        par.chance = config.getDouble("$key.change_setting.particle.chance")
+                        effect.particle = par
+                    }
+                    if (config.contains("$key.change_setting.command")){
+                        effect.command = config.getList("$key.change_setting.command") as MutableList<String>
+                    }
+                    slot.changeeffect = effect
+                }
+
                 slotmap[key] = slot
+                logger.info("${key}スロットロード完了")
             }
 
         }
@@ -327,49 +406,24 @@ class Man10Slot : JavaPlugin() {
         val item = itemstr.split(Regex(",")) as MutableList<String>
 
         for (i in item){
-            var reelitem: ItemStack? = null
 
-            if (i.contains(Regex("-")))reelitem = ItemStack(Material.getMaterial(i.split(Regex("-"))[0].toInt()), 1, i.split(Regex("-"))[1].toShort())
-            else reelitem = ItemStack(Material.getMaterial(i.toInt()))
+            val reelitem =if (i.contains("-")) `ItemStack+`(Material.getMaterial(i.split("-")[0].toInt()), i.split("-")[1].toShort())
+            else `ItemStack+`(Material.getMaterial(i.toInt()))
 
-            reel.add(reelitem)
+            reel.add(reelitem.build())
         }
         return reel
     }
 
-    fun wining_itemCreate(itemstr: String, reel1: MutableList<ItemStack>, reel2: MutableList<ItemStack>, reel3: MutableList<ItemStack>): MutableList<MutableList<ItemStack>>{
+    fun wining_itemCreate(itemstr: String, reel1: MutableList<ItemStack>, reel2: MutableList<ItemStack>, reel3: MutableList<ItemStack>): MutableList<ItemStack>{
 
-        val list = mutableListOf<MutableList<ItemStack>>()
+        val itemlist = mutableListOf<ItemStack>()
 
-        if (!itemstr.contains(Regex(",")))return list
+        if (!itemstr.contains(Regex(",")))return itemlist
 
         val item = itemstr.split(Regex(","))
 
-        if (item.size == 9) {
-
-            val win_item = mutableListOf<ItemStack>()
-
-            for (i in 0 until item.size) {
-
-                var num = 0
-                try {
-                    num = item[i].toInt()
-                } catch (e: NumberFormatException) {
-                    return list
-                }
-
-                when (i % 3) {
-                    0 -> win_item.add(reel1[num - 1])
-                    1 -> win_item.add(reel2[num - 1])
-                    2 -> win_item.add(reel3[num - 1])
-                }
-            }
-
-            list.add(win_item)
-
-        }else if (item.size == 3){
-
-            val itemlist = mutableListOf<ItemStack>()
+        if (item.size == 3){
 
             for (i in 0 until item.size) {
 
@@ -381,7 +435,7 @@ class Man10Slot : JavaPlugin() {
                     try {
                         num = item[i].toInt()
                     } catch (e: NumberFormatException) {
-                        return list
+                        return itemlist
                     }
 
                     when (i % 3) {
@@ -390,96 +444,11 @@ class Man10Slot : JavaPlugin() {
                         2 -> itemlist.add(reel3[num - 1])
                     }
                 }
-            }
 
-            for (i1 in 0 until reel1.size){
-                for(i2 in 0 until reel2.size){
-                    for (i3 in 0 until reel3.size){
-
-                        val r1 = arrayOf(reel1[(i1 + 1) % reel1.size], reel1[i1 % reel1.size], reel1[(i1 + reel1.size - 1) % reel1.size])
-                        val r2 = arrayOf(reel2[(i2 + 1) % reel2.size], reel2[i2 % reel2.size], reel2[(i2 + reel2.size - 1) % reel2.size])
-                        val r3 = arrayOf(reel3[(i3 + 1) % reel3.size], reel3[i3 % reel3.size], reel3[(i3 + reel3.size - 1) % reel3.size])
-
-
-                        if (!itemlist.contains(ItemStack(Material.AIR))) {
-
-                            if ((r1[0] == itemlist[0] && r2[0] == itemlist[1] && r3[0] == itemlist[2]) || (r1[1] == itemlist[0] && r2[1] == itemlist[1] && r3[1] == itemlist[2]) || (r1[2] == itemlist[0] && r2[2] == itemlist[1] && r3[2] == itemlist[2]) ||
-                                    (r1[0] == itemlist[0] && r2[1] == itemlist[1] && r3[2] == itemlist[2]) || (r1[2] == itemlist[0] && r2[1] == itemlist[1] && r3[0] == itemlist[2])) {
-
-                                val win_item = mutableListOf(r1[0], r2[0], r3[0], r1[1], r2[1], r3[1], r1[2], r2[2], r3[2])
-
-                                list.add(win_item)
-                            }
-                        }else{
-                            val num = mutableListOf<Int>()
-
-                            var num2: Int? = null
-
-                            for (i in 0 until itemlist.size){
-                                if (itemlist[i] == ItemStack(Material.AIR)) num.add(i)
-                                else num2 = i
-                            }
-
-                            when(num.size){
-                                1->{
-                                    when(num[0]){
-                                        0->{
-                                            if ((r2[0] == itemlist[1] && r3[0] == itemlist[2]) || (r2[1] == itemlist[1] && r3[0] == itemlist[2]) || (r2[1] == itemlist[1] && r3[1] == itemlist[2]) || (r2[1] == itemlist[1] && r3[2] == itemlist[2]) || (r2[2] == itemlist[1] && r3[2] == itemlist[2])){
-                                                val win_item = mutableListOf(ItemStack(Material.AIR), r2[0], r3[0], ItemStack(Material.AIR), r2[1], r3[1], ItemStack(Material.AIR), r2[2], r3[2])
-                                                list.add(win_item)
-                                            }
-                                        }
-                                        1->{
-                                            if ((r1[0] == itemlist[0] && r3[0] == itemlist[2]) || (r1[0] == itemlist[0] && r3[2] == itemlist[2]) || (r1[1] == itemlist[0] && r3[1] == itemlist[2]) || (r1[2] == itemlist[0] && r3[2] == itemlist[2]) || (r1[2] == itemlist[0] && r3[0] == itemlist[2])){
-                                                val win_item = mutableListOf(r1[0], ItemStack(Material.AIR), r3[0], r1[1], ItemStack(Material.AIR), r3[1], r1[2], ItemStack(Material.AIR), r3[2])
-                                                list.add(win_item)
-                                            }
-                                        }
-                                        2->{
-                                            if ((r2[0] == itemlist[1] && r1[0] == itemlist[0]) || (r2[1] == itemlist[1] && r1[0] == itemlist[0]) || (r2[1] == itemlist[1] && r1[1] == itemlist[0]) || (r2[1] == itemlist[1] && r1[2] == itemlist[0]) || (r2[2] == itemlist[1] && r1[2] == itemlist[0])){
-                                                val win_item = mutableListOf(r1[0], r2[0], ItemStack(Material.AIR), r1[1], r2[1], ItemStack(Material.AIR), r1[2], r2[2], ItemStack(Material.AIR))
-                                                list.add(win_item)
-                                            }
-                                        }
-                                    }
-                                }
-                                2->{
-                                    when(num2){
-
-                                        0->{
-                                            if (r1[0] == itemlist[0] || r1[1] == itemlist[0] || r1[2] == itemlist[0]){
-                                                val win_item = mutableListOf(r1[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r1[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r1[2], ItemStack(Material.AIR), ItemStack(Material.AIR))
-                                                list.add(win_item)
-                                            }
-                                        }
-                                        1->{
-                                            if (r2[0] == itemlist[1] || r2[1] == itemlist[1] || r2[2] == itemlist[1]){
-                                                val win_item = mutableListOf(ItemStack(Material.AIR), r2[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r2[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r2[2], ItemStack(Material.AIR))
-                                                list.add(win_item)
-                                            }
-                                        }
-                                        2->{
-                                            if (r3[0] == itemlist[2] || r3[1] == itemlist[2] || r3[2] == itemlist[2]){
-                                                val win_item = mutableListOf(ItemStack(Material.AIR), ItemStack(Material.AIR), r3[0], ItemStack(Material.AIR), ItemStack(Material.AIR), r3[1], ItemStack(Material.AIR), ItemStack(Material.AIR), r3[2])
-                                                list.add(win_item)
-                                            }
-                                        }
-
-                                    }
-                                }
-                                3->{
-                                    val win_item = mutableListOf(ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR), ItemStack(Material.AIR))
-                                    list.add(win_item)
-                                }
-                            }
-
-                        }
-                    }
-                }
             }
 
         }
-        return list
+        return itemlist
     }
 
     fun fileToConfig(list: Array<File>): MutableList<FileConfiguration>{
@@ -557,13 +526,13 @@ class Man10Slot : JavaPlugin() {
         var win = "0"
         var block: Material? = null
 
-        var spin_particle: Particle? = null
+        var chancenum = 0
 
         val wining_name = HashMap<String, String>()
-        val wining_item = HashMap<String, MutableList<MutableList<ItemStack>>>()
+        val wining_item = HashMap<String, MutableList<ItemStack>>()
         val wining_prize = HashMap<String, Double>()
         val wining_stockodds = HashMap<String, Double>()
-        val wining_chance = HashMap<Double, String>()
+        val wining_chance = HashMap<String, MutableList<Double>>()
         val wining_step = HashMap<String, Int>()
         val wining_command = HashMap<String, MutableList<String>?>()
         val wining_con = HashMap<String, Boolean>()
@@ -576,8 +545,10 @@ class Man10Slot : JavaPlugin() {
         val stopsound2 = HashMap<String, Sound?>()
         val stopsound3 = HashMap<String, Sound?>()
         val chancewin = HashMap<String, MutableList<String>?>()
+        var countgame = 0
+        var changegame = HashMap<String, Int>()
 
-        var spinSound = Sound()
+        var chancechange = HashMap<String, Int?>()
 
         var spin1 = false
         var spin2 = false
@@ -592,6 +563,10 @@ class Man10Slot : JavaPlugin() {
         var spincount = 0
         val wincount = HashMap<String, Int>()
 
+        var stopeffect: Effect? = null
+        var changeeffect: Effect? = null
+        var spineffect: Effect? = null
+
     }
 
     class Sound{
@@ -603,5 +578,11 @@ class Man10Slot : JavaPlugin() {
         var par: org.bukkit.Particle? = null
         var count: Int? = null
         var chance: Double? = null
+    }
+
+    class Effect{
+        var particle: Particle? = null
+        var sound: Sound? = null
+        var command: MutableList<String>? = null
     }
 }

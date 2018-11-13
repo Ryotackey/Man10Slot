@@ -7,5 +7,7 @@ commands:
     usage: /<command>
     default: true
 permissions:
-  scopy.use:
+  mslot.use:
+    default: true
+  mslot.setting:
     default: OP

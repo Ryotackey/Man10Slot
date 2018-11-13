@@ -4,17 +4,20 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.block.Sign
 import org.bukkit.entity.EntityType
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.SignChangeEvent
 import org.bukkit.event.hanging.HangingPlaceEvent
+import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import red.man10.man10vaultapiplus.Man10VaultAPI
 import red.man10.man10vaultapiplus.enums.TransactionCategory
 import red.man10.man10vaultapiplus.enums.TransactionType
 import java.util.*
+import kotlin.collections.HashMap
 
 class Event(val plugin: Man10Slot): Listener {
 
@@ -125,6 +128,32 @@ class Event(val plugin: Man10Slot): Listener {
     }
 
     @EventHandler
+    fun click(e: InventoryClickEvent){
+
+        if (e.inventory.name=="当たりめ"){
+
+            val p = e.whoClicked as Player
+            val item = e.currentItem
+
+            if (item.itemMeta.displayName == "次"){
+
+                if (plugin.invmap.contains(p)){
+
+                    var page = e.inventory.getItem(45).itemMeta.displayName.toInt()
+
+                    page++
+
+                    p.openInventory(plugin.invmap[p]!![page])
+
+                }
+
+            }
+
+        }
+
+    }
+
+    @EventHandler
     fun onClick(e: PlayerInteractEvent){
 
         val p = e.player
@@ -150,6 +179,14 @@ class Event(val plugin: Man10Slot): Listener {
 
         if (plugin.leverloc.containsKey(b.location)){
 
+            if (!p.hasPermission("mslot.use")) return
+
+            if (!plugin.enable){
+                p.sendMessage("${plugin.prefix}§c現在使用できません")
+                e.isCancelled = true
+                return
+            }
+
             val v = Man10VaultAPI("Man10Slot")
 
             val key = plugin.leverloc[b.location]!!
@@ -173,7 +210,17 @@ class Event(val plugin: Man10Slot): Listener {
             sign.setLine(2, "§6§l" + slot.pool!!.balance.toString())
             sign.update()
 
-            val winlist = plugin.mapSort(slot.wining_chance)
+            val map = HashMap<Double, String>()
+
+            for (i in slot.wining_chance){
+
+                val num = slot.chancenum % i.value.size
+
+                map[i.value[num]] = i.key
+
+            }
+
+            val winlist = plugin.mapSort(map)
 
             var win = "0"
 
@@ -214,9 +261,6 @@ class Event(val plugin: Man10Slot): Listener {
                 }
             }
 
-            val sound = slot.spinSound
-            p.location.world.playSound(p.location, sound.sound, sound.volume, sound.pitch)
-
             slot.spin1 = true
             slot.spin2 = true
             slot.spin3 = true
@@ -227,11 +271,20 @@ class Event(val plugin: Man10Slot): Listener {
 
             slot.spincount++
 
-            if (slot.spin_particle != null){
-                val par = slot.spin_particle!!
-                val r = Random().nextDouble()
-                if (r <= par.chance!!){
-                    p.location.world.spawnParticle(par.par,  plugin.frameloc[key]!![4], par.count!!)
+            if (slot.spineffect != null){
+                if (slot.spineffect!!.command != null){
+                    plugin.runCommand(slot.spineffect!!.command!!, "", p, slot.slot_name, 0.0)
+                }
+                if (slot.spineffect!!.particle != null){
+                    val par = slot.spineffect!!.particle!!
+                    val r = Random().nextDouble()
+                    if (r <= par.chance!!) {
+                        plugin.frameloc[key]!![4].world.spawnParticle(par.par!!, plugin.frameloc[key]!![4], par.count!!)
+                    }
+                }
+                if (slot.spineffect!!.sound != null){
+                    val sound = slot.spineffect!!.sound!!
+                    p.location.world.playSound(p.location, sound.sound, sound.volume, sound.pitch)
                 }
             }
 
@@ -241,6 +294,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button1loc.containsKey(b.location)){
+            if (!p.hasPermission("mslot.use")) return
             e.isCancelled = true
             val key = plugin.button1loc[b.location]!!
             val slot = plugin.slotmap[key]!!
@@ -257,6 +311,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button2loc.containsKey(b.location)){
+            if (!p.hasPermission("mslot.use")) return
             e.isCancelled = true
             val key = plugin.button2loc[b.location]!!
             val slot = plugin.slotmap[key]!!
@@ -273,6 +328,7 @@ class Event(val plugin: Man10Slot): Listener {
         }
 
         if (plugin.button3loc.containsKey(b.location)){
+            if (!p.hasPermission("mslot.use")) return
             e.isCancelled = true
             val key = plugin.button3loc[b.location]!!
             val slot = plugin.slotmap[key]!!
