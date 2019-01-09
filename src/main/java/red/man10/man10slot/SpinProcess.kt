@@ -1,5 +1,6 @@
 package red.man10.man10slot
 
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.block.Sign
 import org.bukkit.entity.ItemFrame
@@ -56,16 +57,15 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             win_step = slot.wining_step[win]
             win_command = slot.wining_command[win]
             win_sound = slot.wining_sound[win]
+            Bukkit.broadcastMessage(win)
         }
 
         val list = slot.wining_item
 
         for (i in list){
             val list1 = i.value
-            p.sendMessage(list1.toString())
             if (i.key != win){
                 if (list1.contains(ItemStack(Material.AIR))) {
-                    p.sendMessage("a")
                     for (m in 0 until list1.size){
 
                         if (list1[m] != ItemStack(Material.AIR)){
@@ -84,16 +84,13 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             for (m in 0 until win_item!!.size){
 
                 if (win_item!![m] != ItemStack(Material.AIR)) {
+                    wildlist.remove("(${m})+${win_item!![m].type}+${win_item!![m].durability}")
                     winwild[m] = win_item!![m]
                 }
 
             }
 
         }
-
-        p.sendMessage(lose.toString())
-        p.sendMessage(wildlist.toString())
-        p.sendMessage(winwild.toString())
 
         while (true){
 
@@ -102,30 +99,30 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             if (!slot.spin1){
                 if (!slist.contains(0)) {
                     slist.add(0)
-                    winCheck(0)
                     sripProcess(0)
+                    winCheck(0)
                 }
             }else spin1()
 
             if (!slot.spin2){
                 if (!slist.contains(1)) {
                     slist.add(1)
-                    winCheck(1)
-                    sripProcess(1)
+                    sripProcess2(1)
+                    winCheck1(1)
                 }
             }else spin2()
 
             if (!slot.spin3){
                 if (!slist.contains(2)) {
                     slist.add(2)
-                    winCheck(2)
-                    sripProcess(2)
+                    sripProcess3(2)
+                    winCheck2(2)
                 }
             }else spin3()
 
             if (!slot.spin1 && !slot.spin2 && !slot.spin3){
 
-                if (slot.win != "0" && slot.wining_light[win]!!){
+                if (win != "0" && slot.wining_light[win]!! && !slot.wining_con[win]!!){
                     plugin.blockPlace(slot, key)
                 }
 
@@ -177,6 +174,9 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                             hit()
                             return
                         } else {
+                            if (slot.wining_con[win]!!){
+
+                            }
                             p.sendMessage("$prefix§c外れました")
                             return
                         }
@@ -310,7 +310,7 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
             slot.win = list[r]
         }
 
-        if (slot.wining_light[win]!! && slot.win == "0"){
+        if (slot.wining_light[win]!! && slot.win == "0" ){
             plugin.blockPlace(slot, key)
         }
 
@@ -328,57 +328,48 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
     }
 
-    @Synchronized
-    fun loseCheck(num: Int): Boolean{
+    fun sripProcess(num: Int){
 
-        if (slist.size == 3) {
+        val size = slist.size
 
-                for (i in lose){
+        loop@ while (true) {
+
+            var flag = false
+
+            var flag2 = false
+
+
+            if (slist.size == 3) {
+                for (i in lose) {
 
                     if (i.contains(ItemStack(Material.AIR))) {
                         continue
                     }
 
-                    return (frame[0].item == i[0] && frame[1].item == i[1] && frame[2].item == i[2]) || (frame[0].item == i[0] && frame[4].item == i[1] && frame[8].item == i[2]) || (frame[3].item == i[0] && frame[4].item == i[1] && frame[5].item == i[2])
-                            || (frame[6].item == i[0] && frame[4].item == i[1] && frame[2].item == i[2]) || (frame[6].item == i[0] && frame[7].item == i[1] && frame[8].item == i[2])
+                    if ((frame[0].item == i[0] && frame[1].item == i[1] && frame[2].item == i[2]) || (frame[0].item == i[0] && frame[4].item == i[1] && frame[8].item == i[2]) || (frame[3].item == i[0] && frame[4].item == i[1] && frame[5].item == i[2]) || (frame[6].item == i[0] && frame[4].item == i[1] && frame[2].item == i[2]) || (frame[6].item == i[0] && frame[7].item == i[1] && frame[8].item == i[2])) {
+                        flag = true
+                    }
 
                 }
+            }
 
-        }
+            for (i in wildlist){
 
-        return false
+                if (!i.contains("(${num})")) {
+                    continue
+                }
 
-    }
+                val str = i.split("+")
 
-    @Synchronized
-    fun wildCeck(num: Int): Boolean{
+                val item = `ItemStack+`(Material.getMaterial(str[1]), str[2].toShort()).build()
 
-       for (i in wildlist){
+                if (frame[num].item == item || frame[num+3].item == item || frame[num+6].item == item){
+                    flag2 = true
+                }
 
-           if (!i.contains("(${num})")) {
-                continue
-           }
+            }
 
-           val str = i.split("+")
-
-           val item = `ItemStack+`(Material.getMaterial(str[1]), str[2].toShort()).build()
-
-           if (frame[num].item == item || frame[num+3].item == item || frame[num+6].item == item){
-               return true
-           }
-
-       }
-        return false
-    }
-
-    @Synchronized
-    fun sripProcess(num: Int){
-
-        val size = slist.size
-
-        loop@while (true){
-
-            if (wildCeck(num) || loseCheck(num)){
+            if (flag || flag2) {
 
                 step++
 
@@ -412,85 +403,184 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
                         }
                     }
                 }
-
                 sleep(sleep)
 
-            }else{
+            } else {
                 break@loop
             }
 
         }
+    }
+
+    fun sripProcess2(num: Int){
+
+        if (slist.size == 3) {
+
+            val size = slist.size
+
+            loop@ while (true) {
+
+                var flag = false
+
+                var flag2 = false
+
+                for (i in lose) {
+
+                    if (i.contains(ItemStack(Material.AIR))) {
+                        continue
+                    }
+
+                    if ((frame[0].item == i[0] && frame[1].item == i[1] && frame[2].item == i[2]) || (frame[0].item == i[0] && frame[4].item == i[1] && frame[8].item == i[2]) || (frame[3].item == i[0] && frame[4].item == i[1] && frame[5].item == i[2]) || (frame[6].item == i[0] && frame[4].item == i[1] && frame[2].item == i[2]) || (frame[6].item == i[0] && frame[7].item == i[1] && frame[8].item == i[2])) {
+                        flag = true
+                    }
+
+                }
+
+                for (i in wildlist){
+
+                    if (!i.contains("(${num})")) {
+                        continue
+                    }
+
+                    val str = i.split("+")
+
+                    val item = `ItemStack+`(Material.getMaterial(str[1]), str[2].toShort()).build()
+
+                    if (frame[num].item == item || frame[num+3].item == item || frame[num+6].item == item){
+                        flag2 = true
+                    }
+
+                }
+
+                if (flag || flag2) {
+
+                    step++
+
+                    when (size) {
+                        1 -> {
+                            spin1()
+                            spin2()
+                            spin3()
+                        }
+                        2 -> {
+                            when (slist[0]) {
+                                0 -> {
+                                    spin2()
+                                    spin3()
+                                }
+                                1 -> {
+                                    spin1()
+                                    spin3()
+                                }
+                                2 -> {
+                                    spin1()
+                                    spin2()
+                                }
+                            }
+                        }
+                        3 -> {
+                            when (num) {
+                                0 -> spin1()
+                                1 -> spin2()
+                                2 -> spin3()
+                            }
+                        }
+                    }
+
+                    sleep(sleep)
+
+                } else {
+                    break@loop
+                }
+
+            }
+        }
 
     }
 
-    @Synchronized
-    fun reachCheck(num: Int): Boolean{
+    fun sripProcess3(num: Int){
 
-        when(slist[0]){
+        if (slist.size == 3) {
 
-            0->{
+            val size = slist.size
 
-                when(num){
+            loop@ while (true) {
 
-                    1->{
+                var flag = false
 
-                        if ((frame[0].item == win_item!![0] && (frame[1].item == win_item!![1] || frame[4].item == win_item!![2])) || (frame[3].item == win_item!![0] && frame[4].item == win_item!![1]) || (frame[6].item == win_item!![0] && (frame[7].item == win_item!![1] || frame[4].item == win_item!![2]))) return true
+                var flag2 = false
 
+                for (i in lose) {
+
+                    if (i.contains(ItemStack(Material.AIR))) {
+                        continue
                     }
 
-                    2->{
-
-                        if ((frame[0].item == win_item!![0] && (frame[2].item == win_item!![2] || frame[8].item == win_item!![2])) || (frame[3].item == win_item!![0] && frame[5].item == win_item!![2]) || (frame[6].item == win_item!![0] && (frame[8].item == win_item!![2] || frame[2].item == win_item!![2]))) return true
-
-                    }
-
-                }
-
-            }
-
-            1->{
-
-                when(num){
-
-                    0->{
-
-                        if ((frame[1].item == win_item!![1] && frame[0].item == win_item!![0]) || (frame[4].item == win_item!![1] && (frame[0].item == win_item!![0] || frame[3].item == win_item!![0] || frame[6].item == win_item!![0])) || (frame[7].item == win_item!![1] && frame[6].item == win_item!![0])) return true
-
-                    }
-
-                    2->{
-
-                        if ((frame[1].item == win_item!![1] && frame[2].item == win_item!![2]) || (frame[4].item == win_item!![1] && (frame[2].item == win_item!![2] || frame[5].item == win_item!![2] || frame[8].item == win_item!![2])) || (frame[7].item == win_item!![1] && frame[8].item == win_item!![2])) return true
-
+                    if ((frame[0].item == i[0] && frame[1].item == i[1] && frame[2].item == i[2]) || (frame[0].item == i[0] && frame[4].item == i[1] && frame[8].item == i[2]) || (frame[3].item == i[0] && frame[4].item == i[1] && frame[5].item == i[2]) || (frame[6].item == i[0] && frame[4].item == i[1] && frame[2].item == i[2]) || (frame[6].item == i[0] && frame[7].item == i[1] && frame[8].item == i[2])) {
+                        flag = true
                     }
 
                 }
 
-            }
+                for (i in wildlist){
 
-            2->{
-
-                when(num){
-
-                    1->{
-
-                        if ((frame[2].item == win_item!![2] && (frame[1].item == win_item!![1] || frame[4].item == win_item!![2])) || (frame[5].item == win_item!![2] && frame[4].item == win_item!![1]) || (frame[8].item == win_item!![2] && (frame[7].item == win_item!![1] || frame[4].item == win_item!![2]))) return true
-
+                    if (!i.contains("(${num})")) {
+                        continue
                     }
 
-                    0->{
+                    val str = i.split("+")
 
-                        if ((frame[2].item == win_item!![2] && (frame[0].item == win_item!![0] || frame[6].item == win_item!![0])) || (frame[5].item == win_item!![2] && frame[3].item == win_item!![0]) || (frame[8].item == win_item!![2] && (frame[0].item == win_item!![0] || frame[6].item == win_item!![0]))) return true
+                    val item = `ItemStack+`(Material.getMaterial(str[1]), str[2].toShort()).build()
 
+                    if (frame[num].item == item || frame[num+3].item == item || frame[num+6].item == item){
+                        flag2 = true
                     }
 
                 }
 
-            }
+                if (flag || flag2) {
 
+                    step++
+
+                    when (size) {
+                        1 -> {
+                            spin1()
+                            spin2()
+                            spin3()
+                        }
+                        2 -> {
+                            when (slist[0]) {
+                                0 -> {
+                                    spin2()
+                                    spin3()
+                                }
+                                1 -> {
+                                    spin1()
+                                    spin3()
+                                }
+                                2 -> {
+                                    spin1()
+                                    spin2()
+                                }
+                            }
+                        }
+                        3 -> {
+                            when (num) {
+                                0 -> spin1()
+                                1 -> spin2()
+                                2 -> spin3()
+                            }
+                        }
+                    }
+
+                    sleep(sleep)
+
+                } else {
+                    break@loop
+                }
+
+            }
         }
-
-        return false
 
     }
 
@@ -504,241 +594,1672 @@ class SpinProcess(val plugin: Man10Slot, val p: Player, val win: String, val slo
 
     }
 
-    @Synchronized
+    fun simulation(time: Int, reel: MutableList<ItemStack>, hitposi: MutableList<Int>, posi: Int, item: ItemStack): Int{
+
+        for(i in 0 until time){
+
+            if (hitposi.size == 1){
+                if (reel[(posi+i+reel.size+(1-(hitposi[0])))%reel.size] == item)return i
+            }else if(hitposi.size == 0){
+
+                return 0
+
+            }else if(hitposi.size == 2){
+
+                if (reel[(posi+i+reel.size+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+reel.size+(1-(hitposi[1]*2)))%reel.size] == item)return i
+
+            }else if (hitposi.size == 3){
+                if (reel[(posi+i+reel.size+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+reel.size+(1-(hitposi[1]*2)))%reel.size] == item || reel[(posi+i+reel.size+(1-(hitposi[2]*2)))%reel.size] == item)return i
+            }
+
+        }
+
+        return -1
+
+    }
+
+    fun simulation1(time: Int, reel: MutableList<ItemStack>, hitposi: MutableList<Int>, posi: Int, item: ItemStack): Int{
+
+        for(i in 0 until time){
+
+            if (hitposi.size == 1){
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item)return i
+            }else if(hitposi.size == 0){
+
+                return 0
+
+            }else if(hitposi.size == 2){
+
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+(1-(hitposi[1]*2)))%reel.size] == item)return i
+
+            }else if (hitposi.size == 3){
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+(1-(hitposi[1]*2)))%reel.size] == item || reel[(posi+i+(1-(hitposi[2]*2)))%reel.size] == item)return i
+            }
+
+        }
+
+        return -1
+
+    }
+
+    fun simulation2(time: Int, reel: MutableList<ItemStack>, hitposi: MutableList<Int>, posi: Int, item: ItemStack): Int{
+
+        for(i in 0 until time){
+
+            if (hitposi.size == 1){
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item)return i
+            }else if(hitposi.size == 0){
+
+                return 0
+
+            }else if(hitposi.size == 2){
+
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+(1-(hitposi[1]*2)))%reel.size] == item)return i
+
+            }else if (hitposi.size == 3){
+                if (reel[(posi+i+(1-(hitposi[0])))%reel.size] == item || reel[(posi+i+(1-(hitposi[1]*2)))%reel.size] == item || reel[(posi+i+(1-(hitposi[2]*2)))%reel.size] == item)return i
+            }
+
+        }
+
+        return -1
+
+    }
+
+    fun slotCheck(num: Int): MutableList<Int>{
+
+        val item = win_item!!
+
+        val list = mutableListOf<Int>()
+
+        if (win_item!!.contains(ItemStack(Material.AIR))){
+
+            if (winwild.contains(num)){
+
+                when(winwild.size){
+                    1-> {
+                        if(winwild.contains(num)){
+
+                            list.add(0)
+                            list.add(1)
+                            list.add(2)
+
+                        }
+                    }
+
+                    2->{
+
+                        if (!winwild.contains(0)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 0){
+
+                                        if (num == 1){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 1){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(1)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 1){
+
+                                        if (num == 0){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(2)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(2)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(2)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 2){
+
+                                        if (num == 0){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }else if (num == 1){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }else if (num == 1){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }
+
+                    }
+                }
+
+            }
+
+        }else{
+
+            when (slist.size){
+
+                1->{
+                    list.add(0)
+                    list.add(1)
+                    list.add(2)
+                }
+
+                2->{
+
+                    when(slist[0]){
+
+                        0->{
+
+                            if (num == 1){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        1->{
+
+                            if (num == 0){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        2->{
+
+                            if (num == 1){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==0){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                3->{
+
+                    when(num){
+
+                        0->{
+
+                            if (frame[1].item == item[1] && frame[2].item == item[2] || frame[4].item == item[1] && frame[8].item == item[2])list.add(0)
+                            if (frame[4].item == item[1] && frame[5].item == item[2])list.add(1)
+                            if (frame[4].item == item[1] && frame[2].item == item[2] || frame[7].item == item[1] && frame[8].item == item[2])list.add(2)
+
+                        }
+
+                        1->{
+
+                            if (frame[0].item == item[0] && frame[2].item == item[2])list.add(0)
+                            if (frame[3].item == item[0] && frame[5].item == item[2] || frame[0].item == item[0] && frame[8].item == item[2] || frame[6].item == item[0] && frame[2].item == item[2])list.add(1)
+                            if (frame[6].item == item[0] && frame[2].item == item[2])list.add(2)
+
+                        }
+
+                        2->{
+
+                            if (frame[1].item == item[1] && frame[0].item == item[0] || frame[4].item == item[1] && frame[6].item == item[0])list.add(0)
+                            if (frame[4].item == item[1] && frame[3].item == item[0])list.add(1)
+                            if (frame[4].item == item[1] && frame[0].item == item[0] || frame[7].item == item[1] && frame[6].item == item[0])list.add(2)
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return list
+
+    }
+
+    fun slotCheck1(num: Int): MutableList<Int>{
+
+        val item = win_item!!
+
+        val list = mutableListOf<Int>()
+
+        if (win_item!!.contains(ItemStack(Material.AIR))){
+
+            if (winwild.contains(num)){
+
+                when(winwild.size){
+                    1-> {
+                        if(winwild.contains(num)){
+
+                            list.add(0)
+                            list.add(1)
+                            list.add(2)
+
+                        }
+                    }
+
+                    2->{
+
+                        if (!winwild.contains(0)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 0){
+
+                                        if (num == 1){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 1){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(1)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 1){
+
+                                        if (num == 0){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(2)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(2)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(2)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 2){
+
+                                        if (num == 0){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }else if (num == 1){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }else if (num == 1){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }
+
+                    }
+                }
+
+            }
+
+        }else{
+
+            when (slist.size){
+
+                1->{
+                    list.add(0)
+                    list.add(1)
+                    list.add(2)
+                }
+
+                2->{
+
+                    when(slist[0]){
+
+                        0->{
+
+                            if (num == 1){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        1->{
+
+                            if (num == 0){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        2->{
+
+                            if (num == 1){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==0){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                3->{
+
+                    when(num){
+
+                        0->{
+
+                            if (frame[1].item == item[1] && frame[2].item == item[2] || frame[4].item == item[1] && frame[8].item == item[2])list.add(0)
+                            if (frame[4].item == item[1] && frame[5].item == item[2])list.add(1)
+                            if (frame[4].item == item[1] && frame[2].item == item[2] || frame[7].item == item[1] && frame[8].item == item[2])list.add(2)
+
+                        }
+
+                        1->{
+
+                            if (frame[0].item == item[0] && frame[2].item == item[2])list.add(0)
+                            if (frame[3].item == item[0] && frame[5].item == item[2] || frame[0].item == item[0] && frame[8].item == item[2] || frame[6].item == item[0] && frame[2].item == item[2])list.add(1)
+                            if (frame[6].item == item[0] && frame[2].item == item[2])list.add(2)
+
+                        }
+
+                        2->{
+
+                            if (frame[1].item == item[1] && frame[0].item == item[0] || frame[4].item == item[1] && frame[6].item == item[0])list.add(0)
+                            if (frame[4].item == item[1] && frame[3].item == item[0])list.add(1)
+                            if (frame[4].item == item[1] && frame[0].item == item[0] || frame[7].item == item[1] && frame[6].item == item[0])list.add(2)
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return list
+
+    }
+
+    fun slotCheck2(num: Int): MutableList<Int>{
+
+        val item = win_item!!
+
+        val list = mutableListOf<Int>()
+
+        if (win_item!!.contains(ItemStack(Material.AIR))){
+
+            if (winwild.contains(num)){
+
+                when(winwild.size){
+                    1-> {
+                        if(winwild.contains(num)){
+
+                            list.add(0)
+                            list.add(1)
+                            list.add(2)
+
+                        }
+                    }
+
+                    2->{
+
+                        if (!winwild.contains(0)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 0){
+
+                                        if (num == 1){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 1){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(1)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 1){
+
+                                        if (num == 0){
+                                            if (frame[2].item == win_item!![2]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[5].item == win_item!![2]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[8].item == win_item!![2]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }else if (num == 2){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(2)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[2].item == win_item!![2]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[5].item == win_item!![2]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[8].item == win_item!![2]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }else if (num == 2){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(2)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }else if (!winwild.contains(2)){
+
+                            when(slist.size){
+
+                                1->{
+
+                                    list.add(0)
+                                    list.add(1)
+                                    list.add(2)
+
+                                }
+
+                                2->{
+
+                                    if (slist[0] != 2){
+
+                                        if (num == 0){
+                                            if (frame[1].item == win_item!![1]){
+                                                list.add(0)
+                                            }
+
+                                            if (frame[4].item == win_item!![1]){
+                                                if (!list.contains(0)) list.add(0)
+                                                if (!list.contains(1)) list.add(1)
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+
+                                            if (frame[7].item == win_item!![1]){
+                                                if (!list.contains(2)) list.add(2)
+                                            }
+                                        }else if (num == 1){
+                                            if (frame[0].item == win_item!![0]){
+                                                list.add(0)
+                                                list.add(1)
+                                            }
+
+                                            if (frame[3].item == win_item!![0]){
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+
+                                            if (frame[6].item == win_item!![0]){
+                                                if (!list.contains(2)) list.add(2)
+                                                if (!list.contains(1)) list.add(1)
+                                            }
+                                        }
+
+                                    }else{
+                                        list.add(0)
+                                        list.add(1)
+                                        list.add(2)
+                                    }
+
+                                }
+
+                                3->{
+
+                                    if (num == 0){
+                                        if (frame[1].item == win_item!![1]){
+                                            list.add(0)
+                                        }
+
+                                        if (frame[4].item == win_item!![1]){
+                                            if (!list.contains(0)) list.add(0)
+                                            if (!list.contains(1)) list.add(1)
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+
+                                        if (frame[7].item == win_item!![1]){
+                                            if (!list.contains(2)) list.add(2)
+                                        }
+                                    }else if (num == 1){
+                                        if (frame[0].item == win_item!![0]){
+                                            list.add(0)
+                                            list.add(1)
+                                        }
+
+                                        if (frame[3].item == win_item!![0]){
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+
+                                        if (frame[6].item == win_item!![0]){
+                                            if (!list.contains(2)) list.add(2)
+                                            if (!list.contains(1)) list.add(1)
+                                        }
+                                    }
+
+                                }
+
+
+                            }
+
+                        }
+
+                    }
+                }
+
+            }
+
+        }else{
+
+            when (slist.size){
+
+                1->{
+                    list.add(0)
+                    list.add(1)
+                    list.add(2)
+                }
+
+                2->{
+
+                    when(slist[0]){
+
+                        0->{
+
+                            if (num == 1){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[0].item == win_item!![0]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[3].item == win_item!![0]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[6].item == win_item!![0]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        1->{
+
+                            if (num == 0){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }else if(num==2){
+
+                                if (frame[1].item == win_item!![1]){
+                                    list.add(0)
+                                }
+
+                                if (frame[4].item == win_item!![1]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(1)) list.add(1)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                                if (frame[7].item == win_item!![1]){
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                        2->{
+
+                            if (num == 1){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(1)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(2)) list.add(2)
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                            }else if(num==0){
+
+                                if (frame[2].item == win_item!![2]){
+                                    list.add(0)
+                                    list.add(2)
+                                }
+
+                                if (frame[5].item == win_item!![2]){
+                                    if (!list.contains(1)) list.add(1)
+                                }
+
+                                if (frame[8].item == win_item!![2]){
+                                    if (!list.contains(0)) list.add(0)
+                                    if (!list.contains(2)) list.add(2)
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                3->{
+
+                    when(num){
+
+                        0->{
+
+                            if (frame[1].item == item[1] && frame[2].item == item[2] || frame[4].item == item[1] && frame[8].item == item[2])list.add(0)
+                            if (frame[4].item == item[1] && frame[5].item == item[2])list.add(1)
+                            if (frame[4].item == item[1] && frame[2].item == item[2] || frame[7].item == item[1] && frame[8].item == item[2])list.add(2)
+
+                        }
+
+                        1->{
+
+                            if (frame[0].item == item[0] && frame[2].item == item[2])list.add(0)
+                            if (frame[3].item == item[0] && frame[5].item == item[2] || frame[0].item == item[0] && frame[8].item == item[2] || frame[6].item == item[0] && frame[2].item == item[2])list.add(1)
+                            if (frame[6].item == item[0] && frame[2].item == item[2])list.add(2)
+
+                        }
+
+                        2->{
+
+                            if (frame[1].item == item[1] && frame[0].item == item[0] || frame[4].item == item[1] && frame[6].item == item[0])list.add(0)
+                            if (frame[4].item == item[1] && frame[3].item == item[0])list.add(1)
+                            if (frame[4].item == item[1] && frame[0].item == item[0] || frame[7].item == item[1] && frame[6].item == item[0])list.add(2)
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return list
+
+    }
+
     fun winCheck(num: Int){
 
         val size = slist.size
 
         if (win != "0"){
 
-            val item = win_item!!
+            var reel = mutableListOf<ItemStack>()
 
-            if (item.contains(ItemStack(Material.AIR))){
+            when(num){
+                0-> reel = reel1
+                1-> reel = reel2
+                2-> reel = reel3
+            }
 
-                if (winwild.contains(num)){
+            val time = simulation(win_step!!, reel, slotCheck(num), step, win_item!![num])
 
-                    val winitem = winwild[num]!!
+            if(time == -1) return
 
-                    if (winwild.size == 1) {
+            for (i in 0 until time){
 
-                        loop@for (i in 0 until win_step!!) {
+                step++
 
-                            if (frame[num].item != winitem && frame[num + 3].item != winitem && frame[num + 6].item != winitem) {
-
-                                step++
-
-                                when (size) {
-                                    1 -> {
-                                        spin1()
-                                        spin2()
-                                        spin3()
-                                    }
-                                    2 -> {
-                                        when (slist[0]) {
-                                            0 -> {
-                                                spin2()
-                                                spin3()
-                                            }
-                                            1 -> {
-                                                spin1()
-                                                spin3()
-                                            }
-                                            2 -> {
-                                                spin1()
-                                                spin2()
-                                            }
-                                        }
-                                    }
-                                    3 -> {
-                                        when (num) {
-                                            0 -> spin1()
-                                            1 -> spin2()
-                                            2 -> spin3()
-                                        }
-                                    }
-                                }
-
-                            }else break@loop
-
-                            sleep(sleep)
-
-                        }
-                        
-                    }else if (winwild.size == 2){
-
-                        if (winwild.contains(0) && winwild.contains(1)){
-
-                            if ((frame[0].item == winwild[0] && frame[1].item == winwild[1]) || (frame[0].item == winwild[0] && frame[4].item == winwild[1]) || (frame[3].item == winwild[0] && frame[4].item == winwild[1]) || (frame[6].item == winwild[0] && frame[4].item == winwild[1]) || (frame[6].item == winwild[0] && frame[7].item == winwild[1])){
-
-                            } else {
-                                p.sendMessage("$prefix§c外れました")
-                                return
-                            }
-
-                        }else if (winwild.contains(0) && winwild.contains(2)){
-
-                            if ((frame[0].item == winwild[0] && frame[2].item == winwild[2]) || (frame[0].item == winwild[0] && frame[8].item == winwild[2]) || (frame[3].item == winwild[0] && frame[5].item == winwild[2]) || (frame[6].item == winwild[0] && frame[2].item == winwild[2]) || (frame[6].item == winwild[0] && frame[8].item == winwild[2])){
-
-                            } else {
-                                p.sendMessage("$prefix§c外れました")
-                                return
-                            }
-
-                        }else if (winwild.contains(1) && winwild.contains(2)){
-
-                            if ((frame[2].item == winwild[2] && frame[1].item == winwild[1]) || (frame[2].item == winwild[2] && frame[4].item == winwild[1]) || (frame[5].item == winwild[2] && frame[4].item == winwild[1]) || (frame[8].item == winwild[2] && frame[4].item == winwild[1]) || (frame[8].item == winwild[2] && frame[7].item == winwild[1])){
-
-                            } else {
-                                p.sendMessage("$prefix§c外れました")
-                                return
-                            }
-
-                        }
-
-                        hit()
-                        return
-
+                when (size) {
+                    1 -> {
+                        spin1()
+                        spin2()
+                        spin3()
                     }
-
-                }
-
-            }else {
-
-                when(size){
-
-                    1->{
-
-                        loop@for (i in 0 until win_step!!){
-
-                            if (frame[num].item != item[num] || frame[num+3].item != item[num] || frame[num+6].item != item[num]){
-                                step++
-                                spin1()
+                    2 -> {
+                        when (slist[0]) {
+                            0 -> {
                                 spin2()
                                 spin3()
-                            }else break@loop
-
-                            sleep(sleep)
-
+                            }
+                            1 -> {
+                                spin1()
+                                spin3()
+                            }
+                            2 -> {
+                                spin1()
+                                spin2()
+                            }
                         }
-
                     }
-
-                    2->{
-
-                        when(slist[0]){
-
-                            0->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if (!reachCheck(num)) {
-                                        step++
-
-                                        spin2()
-                                        spin3()
-
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
-                            1->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if (!reachCheck(num)) {
-                                        step++
-
-                                        spin1()
-                                        spin3()
-
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
-                            2->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if (!reachCheck(num)) {
-                                        step++
-
-                                        spin1()
-                                        spin2()
-
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
+                    3 -> {
+                        when (num) {
+                            0 -> spin1()
+                            1 -> spin2()
+                            2 -> spin3()
                         }
-
                     }
-
-                    3->{
-
-                        when(num){
-
-                            0->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if(!comCheck()){
-                                        step++
-                                        spin1()
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
-                            1->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if(!comCheck()){
-                                        step++
-                                        spin2()
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
-                            2->{
-
-                                loop@for (i in 0 until win_step!!) {
-
-                                    if(!comCheck()){
-                                        step++
-                                        spin3()
-                                    }else break@loop
-
-                                    sleep(sleep)
-
-                                }
-
-                            }
-
-                        }
-
-                    }
-
                 }
+                sleep(sleep)
+
+            }
+        }
+    }
+
+    fun winCheck1(num: Int){
+
+        val size = slist.size
+
+        if (win != "0"){
+
+            var reel = mutableListOf<ItemStack>()
+
+            when(num){
+                0-> reel = reel1
+                1-> reel = reel2
+                2-> reel = reel3
+            }
+
+            val time = simulation1(win_step!!, reel, slotCheck1(num), step, win_item!![num])
+
+            if(time == -1) return
+
+            for (i in 0 until time){
+
+                step++
+
+                when (size) {
+                    1 -> {
+                        spin1()
+                        spin2()
+                        spin3()
+                    }
+                    2 -> {
+                        when (slist[0]) {
+                            0 -> {
+                                spin2()
+                                spin3()
+                            }
+                            1 -> {
+                                spin1()
+                                spin3()
+                            }
+                            2 -> {
+                                spin1()
+                                spin2()
+                            }
+                        }
+                    }
+                    3 -> {
+                        when (num) {
+                            0 -> spin1()
+                            1 -> spin2()
+                            2 -> spin3()
+                        }
+                    }
+                }
+                sleep(sleep)
+
+            }
+        }
+    }
+
+    fun winCheck2(num: Int){
+
+        val size = slist.size
+
+        if (win != "0"){
+
+            var reel = mutableListOf<ItemStack>()
+
+            when(num){
+                0-> reel = reel1
+                1-> reel = reel2
+                2-> reel = reel3
+            }
+
+            val time = simulation2(win_step!!, reel, slotCheck2(num), step, win_item!![num])
+
+            if(time == -1) return
+
+            for (i in 0 until time){
+
+                step++
+
+                when (size) {
+                    1 -> {
+                        spin1()
+                        spin2()
+                        spin3()
+                    }
+                    2 -> {
+                        when (slist[0]) {
+                            0 -> {
+                                spin2()
+                                spin3()
+                            }
+                            1 -> {
+                                spin1()
+                                spin3()
+                            }
+                            2 -> {
+                                spin1()
+                                spin2()
+                            }
+                        }
+                    }
+                    3 -> {
+                        when (num) {
+                            0 -> spin1()
+                            1 -> spin2()
+                            2 -> spin3()
+                        }
+                    }
+                }
+                sleep(sleep)
 
             }
         }

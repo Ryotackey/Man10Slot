@@ -67,6 +67,18 @@ class Man10Slot : JavaPlugin() {
     override fun onDisable() {
         // Plugin shutdown logic
         locationSave()
+        for (i in slotmap){
+
+            val slot = i.value
+            slot.spin1 = false
+            slot.spin2 = false
+            slot.spin3 = false
+            if (slot.block != null){
+                val b = lightloc[i.key]!!.block
+                b.type = slot.block
+            }
+
+        }
     }
 
     fun locationSave(){

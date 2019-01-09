@@ -6,8 +6,9 @@ commands:
     description: Command no setsumei
     usage: /<command>
     default: true
-permissions:
+    permission:
+      mslot.setting:
+        default: OP
+permissons:
   mslot.use:
     default: true
-  mslot.setting:
-    default: OP
